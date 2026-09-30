@@ -318,6 +318,19 @@ class AppStore {
     this.saveState();
   }
 
+  deleteTask(taskId) {
+    this.state.tasks = this.state.tasks.filter((t) => t.id !== taskId);
+    this.saveState();
+  }
+
+  updateTask(taskId, changes) {
+    const idx = this.state.tasks.findIndex((t) => t.id === taskId);
+    if (idx !== -1) {
+      this.state.tasks[idx] = { ...this.state.tasks[idx], ...changes };
+      this.saveState();
+    }
+  }
+
   toggleTask(taskId) {
     const task = this.state.tasks.find((t) => t.id === taskId);
     if (task) {
@@ -329,6 +342,11 @@ class AppStore {
 
   addCountdown(item) {
     this.state.countdowns.push(item);
+    this.saveState();
+  }
+
+  deleteCountdown(id) {
+    this.state.countdowns = this.state.countdowns.filter((c) => c.id !== id);
     this.saveState();
   }
 

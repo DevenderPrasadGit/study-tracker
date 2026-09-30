@@ -123,6 +123,24 @@ class TasksManager {
     this.renderTasks();
   }
 
+  deleteTask(taskId) {
+    if (confirm('Delete this task?')) {
+      if (window.appStore) {
+        window.appStore.deleteTask(taskId);
+      }
+      this.renderTasks();
+    }
+  }
+
+  deleteCountdown(id) {
+    if (confirm('Delete this countdown deadline?')) {
+      if (window.appStore) {
+        window.appStore.deleteCountdown(id);
+      }
+      this.renderCountdowns();
+    }
+  }
+
   renderTasks() {
     const containers = [
       document.getElementById('tasks-items-list'),
@@ -159,14 +177,16 @@ class TasksManager {
       containers.forEach((container) => {
         const item = document.createElement('div');
         item.className = `task-checkbox-item ${task.completed ? 'checked' : ''}`;
-        item.onclick = () => this.toggleTask(task.id);
 
         item.innerHTML = `
-          <div class="custom-checkbox">
+          <div class="custom-checkbox" onclick="window.tasksManager.toggleTask('${task.id}')">
             ${task.completed ? '✓' : ''}
           </div>
-          <span style="flex: 1;">${task.title}</span>
+          <span style="flex: 1; cursor: pointer;" onclick="window.tasksManager.toggleTask('${task.id}')">${task.title}</span>
           ${task.priority ? `<span class="category-tag tag-education" style="font-size: 10px;">${task.priority}</span>` : ''}
+          <button class="btn-icon-subtle" title="Delete Task" onclick="event.stopPropagation(); window.tasksManager.deleteTask('${task.id}')" style="font-size: 11px; padding: 2px 4px; opacity: 0.6; margin-left: 4px;">
+            🗑
+          </button>
         `;
         container.appendChild(item);
       });
@@ -207,7 +227,12 @@ class TasksManager {
           <div class="countdown-name">${item.title}</div>
           <div class="countdown-date">${new Date(item.targetDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</div>
         </div>
-        <div class="countdown-badge">${diffStr}</div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <div class="countdown-badge">${diffStr}</div>
+          <button class="btn-icon-subtle" title="Delete Countdown" onclick="window.tasksManager.deleteCountdown('${item.id}')" style="font-size: 11px; padding: 2px 4px; opacity: 0.7;">
+            🗑
+          </button>
+        </div>
       `;
       list.appendChild(row);
     });

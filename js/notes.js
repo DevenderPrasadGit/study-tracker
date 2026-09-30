@@ -215,13 +215,18 @@ class NotesManager {
 
       card.innerHTML = `
         <div class="note-card-top-row">
-          <div style="display: flex; align-items: center; gap: 6px; overflow: hidden;">
+          <div style="display: flex; align-items: center; gap: 6px; overflow: hidden; flex: 1;">
             ${note.pinned ? '<span style="color: var(--accent-gold); font-size: 11px;">📌</span>' : ''}
             <span class="note-card-title">${note.title || 'Untitled'}</span>
           </div>
-          <button class="btn-icon-subtle pin-btn" title="Toggle Pin" onclick="event.stopPropagation(); window.notesManager.togglePin('${note.id}')">
-            ${note.pinned ? '★' : '☆'}
-          </button>
+          <div style="display: flex; gap: 2px;">
+            <button class="btn-icon-subtle pin-btn" title="Toggle Pin" onclick="event.stopPropagation(); window.notesManager.togglePin('${note.id}')">
+              ${note.pinned ? '★' : '☆'}
+            </button>
+            <button class="btn-icon-subtle" title="Delete Note" onclick="event.stopPropagation(); window.notesManager.deleteNote('${note.id}')" style="font-size: 11px; padding: 2px 4px; opacity: 0.6;">
+              🗑
+            </button>
+          </div>
         </div>
         <div class="note-card-preview">
           ${note.content.replace(/[#*`_]/g, '').slice(0, 75) || 'Empty note...'}

@@ -315,9 +315,9 @@ class MusicStationManager {
     if (!inputUrl) return null;
     inputUrl = inputUrl.trim();
 
-    // Spotify track / playlist / album
+    // Spotify track / playlist / album / episode
     if (inputUrl.includes('spotify.com')) {
-      const match = inputUrl.match(/open\.spotify\.com\/(track|playlist|album|artist)\/([a-zA-Z0-9]+)/);
+      const match = inputUrl.match(/open\.spotify\.com\/(track|playlist|album|artist|episode)\/([a-zA-Z0-9]+)/);
       if (match) {
         const type = match[1];
         const id = match[2];
@@ -329,7 +329,33 @@ class MusicStationManager {
       }
     }
 
-    // YouTube playlist
+    // YouTube - Check for specific Video ID FIRST (e.g., watch?v=..., youtu.be/..., shorts/..., live/...)
+    // This is crucial: Many YouTube video links include &list= (mixes/radios) which would otherwise play random songs!
+    let videoId = null;
+    const vParamMatch = inputUrl.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+    if (vParamMatch) {
+      videoId = vParamMatch[1];
+    } else {
+      const shortMatch = inputUrl.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+      if (shortMatch) {
+        videoId = shortMatch[1];
+      } else {
+        const pathMatch = inputUrl.match(/(?:youtube(?:-nocookie)?\.com\/(?:embed|shorts|live)\/)([a-zA-Z0-9_-]{11})/);
+        if (pathMatch) {
+          videoId = pathMatch[1];
+        }
+      }
+    }
+
+    if (videoId) {
+      return {
+        type: 'youtube',
+        embedUrl: `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&enablejsapi=1`,
+        title: 'Custom YouTube Track'
+      };
+    }
+
+    // YouTube Playlist ONLY if no specific video ID was found (e.g. youtube.com/playlist?list=...)
     if (inputUrl.includes('list=')) {
       const listMatch = inputUrl.match(/[?&]list=([a-zA-Z0-9_-]+)/);
       if (listMatch) {
@@ -339,21 +365,6 @@ class MusicStationManager {
           title: 'YouTube Study Playlist'
         };
       }
-    }
-
-    // YouTube standard watch or short url
-    let videoId = null;
-    const ytWatchMatch = inputUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/);
-    if (ytWatchMatch) {
-      videoId = ytWatchMatch[1];
-    }
-
-    if (videoId) {
-      return {
-        type: 'youtube',
-        embedUrl: `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&enablejsapi=1`,
-        title: 'Custom YouTube Track'
-      };
     }
 
     return null;
