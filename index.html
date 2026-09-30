@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Timylabs - Nostalgic Pixel Anime Study Tracker</title>
+  
+  <!-- Nostalgic & Modern Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet" />
+
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+  <!-- Pixel Anime Atmospheric Wallpaper -->
+  <div id="app-wallpaper" class="wallpaper-container" style="background-image: url('assets/images/pixel_ship.jpg');"></div>
+
+  <!-- Ambient Dust / Star Particles Canvas -->
+  <canvas id="ambient-particles-canvas"></canvas>
+
+  <!-- Nostalgic CRT Scanlines Overlay (Toggleable) -->
+  <div class="crt-overlay"></div>
+
+  <!-- Tooltip Element -->
+  <div id="heatmap-tooltip" class="heatmap-tooltip"></div>
+
+  <!-- Main Application Shell -->
+  <div class="app-shell">
+    
+    <!-- Left Sidebar -->
+    <aside class="sidebar">
+      <div class="brand-section">
+        <div class="brand-avatar">
+          <img src="assets/images/pixel_cat.jpg" alt="Pixel Mascot" />
+        </div>
+        <div class="brand-title">
+          <span class="brand-name">Timylabs <span style="font-size: 14px;">✨</span></span>
+          <span class="brand-tag">Focus Sanctuary</span>
+        </div>
+      </div>
+
+      <!-- Navigation Menu -->
+      <nav class="nav-menu">
+        <a class="nav-item active" data-nav-view="dashboard">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </span>
+          <span>Dashboard</span>
+        </a>
+
+        <a class="nav-item" data-nav-view="events">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </span>
+          <span>Events</span>
+          <span class="nav-badge" id="nav-events-count">4</span>
+        </a>
+
+        <a class="nav-item" data-nav-view="habits">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+          </span>
+          <span>Habits</span>
+        </a>
+
+        <a class="nav-item" data-nav-view="focus">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </span>
+          <span>Focus</span>
+        </a>
+
+        <a class="nav-item" data-nav-view="tasks">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
+          </span>
+          <span>Tasks</span>
+        </a>
+
+        <a class="nav-item" data-nav-view="stats">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          </span>
+          <span>Stats</span>
+        </a>
+
+        <a class="nav-item" data-nav-view="notes">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          </span>
+          <span>Notes</span>
+        </a>
+
+        <a class="nav-item" data-nav-view="settings">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </span>
+          <span>Settings</span>
+        </a>
+      </nav>
+
+      <!-- Gamified Scholar Rank Card -->
+      <div class="scholar-rank-card">
+        <div class="rank-top">
+          <div class="rank-trophy-icon">🏆</div>
+          <div class="rank-info">
+            <span class="rank-name">Bronze III</span>
+            <span class="rank-level">Level 3 Scholar</span>
+          </div>
+        </div>
+        <div class="rank-progress-bar">
+          <div class="rank-progress-fill" style="width: 53.06%;"></div>
+        </div>
+        <div class="rank-stats-text">
+          <span>53.06%</span>
+          <span>28h 57m / 54h</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Viewport -->
+    <main class="main-viewport">
+      
+      <!-- Top Header -->
+      <header class="top-header">
+        <div class="header-greeting-container">
+          <div class="header-title-row">
+            <h1 class="header-greeting">Good evening, Scholar 👋</h1>
+            <div class="quote-pill" onclick="window.randomizeQuote()" title="Click to get new inspiration">
+              <span id="header-daily-quote">Discipline today, freedom tomorrow.</span>
+              <span>✎</span>
+            </div>
+          </div>
+          <div class="header-subtext">Your space. Your rhythm.</div>
+        </div>
+
+        <!-- Header Actions -->
+        <div class="header-actions">
+          <!-- Ambient Sound Generator Toggle -->
+          <button id="btn-ambient-sound-toggle" class="header-icon-btn" title="Ambient Sound Generator">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+          </button>
+
+          <!-- Lo-Fi Stream & Music Player Toggle -->
+          <button id="btn-music-toggle" class="header-icon-btn" title="Lo-Fi & Music Stream">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          </button>
+
+          <!-- CRT Scanlines Retro Toggle -->
+          <button id="btn-toggle-crt" class="header-icon-btn" onclick="window.toggleCRTScanlines()" title="Toggle Nostalgic CRT Scanlines">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg>
+          </button>
+
+          <!-- Achievements & Quests Button -->
+          <button id="btn-open-achievements" class="header-icon-btn" title="Quests & Achievements">
+            🏆
+          </button>
+
+          <!-- Notification Bell -->
+          <button class="header-icon-btn" title="Notifications">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          </button>
+
+          <!-- User Profile Pill -->
+          <div class="user-profile-badge" title="Click to customize avatar">
+            <img id="user-avatar-img" src="assets/images/pixel_cat.jpg" class="user-profile-avatar" alt="Cat Profile" />
+            <span class="user-profile-name">Timylabs</span>
+            <span class="user-premium-tag">PREMIUM</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </div>
+
+        <!-- Lo-Fi Music Player Popover -->
+        <div id="music-popover" class="music-popover">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h4 style="font-size: 14px; font-weight: 700; color: #fff;">🎵 Lo-Fi Study Station</h4>
+            <span style="font-size: 10px; color: var(--accent-gold); font-family: var(--font-digital);">24/7 STREAM</span>
+          </div>
+          <div style="border-radius: 8px; overflow: hidden; margin-bottom: 12px; background: #000;">
+            <iframe id="lofi-stream-iframe" width="100%" height="160" src="https://www.youtube-nocookie.com/embed/jfKfPfyJRdk?enablejsapi=1" title="Lofi Study Stream" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-dim);">
+            <span>Channel: Lofi Girl Official</span>
+            <span style="color: var(--accent-gold);">● LIVE</span>
+          </div>
+        </div>
+
+        <!-- Ambient Sound Popover -->
+        <div id="ambient-sound-popover" class="ambient-sound-popover">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <h4 style="font-size: 14px; font-weight: 700; color: #fff;">🎧 Ambient Atmosphere</h4>
+            <span style="font-size: 10px; color: var(--accent-gold); font-family: var(--font-digital);">WEB AUDIO ENGINE</span>
+          </div>
+
+          <div class="sound-track-row">
+            <div class="sound-track-info">
+              <input type="checkbox" id="chk-rain-enable" />
+              <label for="chk-rain-enable">🌧 Rainy Window</label>
+            </div>
+            <input type="range" id="slider-rain-volume" class="sound-slider" min="0" max="1" step="0.05" value="0.4" />
+          </div>
+
+          <div class="sound-track-row">
+            <div class="sound-track-info">
+              <input type="checkbox" id="chk-fire-enable" />
+              <label for="chk-fire-enable">🔥 Cozy Fireplace</label>
+            </div>
+            <input type="range" id="slider-fire-volume" class="sound-slider" min="0" max="1" step="0.05" value="0.3" />
+          </div>
+
+          <div class="sound-track-row">
+            <div class="sound-track-info">
+              <input type="checkbox" id="chk-lofi-enable" />
+              <label for="chk-lofi-enable">🎹 Lo-Fi Chords</label>
+            </div>
+            <input type="range" id="slider-lofi-volume" class="sound-slider" min="0" max="1" step="0.05" value="0.35" />
+          </div>
+        </div>
+      </header>
+
+      <!-- Scrollable Views Container -->
+      <div class="view-container">
+
+        <!-- ================================================================
+             VIEW 1: DASHBOARD (Reference Image 1)
+             ================================================================ -->
+        <section id="view-dashboard" class="app-view active">
+          <div class="dashboard-grid">
+            
+            <!-- Left Column: Today's Plan & Habits -->
+            <div class="dash-col-left">
+              
+              <!-- Today's Plan / Active Subjects -->
+              <div class="glass-card">
+                <div class="card-header">
+                  <div class="card-title-group">
+                    <span class="card-icon">📁</span>
+                    <h3 class="card-title">Today's Plan</h3>
+                  </div>
+                  <div class="card-actions">
+                    <button class="btn-icon-subtle" title="Plan Analytics">📊</button>
+                    <button id="btn-add-plan-modal" class="btn-pill-amber">
+                      <span>+</span> Add
+                    </button>
+                  </div>
+                </div>
+
+                <div id="plans-cards-list" class="plan-cards-list">
+                  <!-- Dynamically populated by window.renderDashboardPlans() -->
+                </div>
+              </div>
+
+              <!-- Habits Tracker Widget (Weekly Matrix) -->
+              <div class="glass-card">
+                <div class="card-header">
+                  <div class="card-title-group">
+                    <span class="card-icon">⚡</span>
+                    <h3 class="card-title">Habits</h3>
+                  </div>
+                  <div class="habits-nav-controls">
+                    <button class="btn-icon-subtle">‹</button>
+                    <span>This Week</span>
+                    <button class="btn-icon-subtle">›</button>
+                    <button id="btn-add-habit-modal" class="btn-pill-amber">
+                      <span>+</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div id="habits-list-container" class="habits-list">
+                  <!-- Dynamically populated by habitsManager.renderHabits() -->
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Right Column: Focus Timer, Overview, Countdowns, Tasks -->
+            <div class="dash-col-right">
+
+              <!-- Focus Timer Card -->
+              <div class="glass-card timer-card">
+                <div class="timer-header-tabs">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="color: var(--accent-gold); font-size: 14px;">⏱</span>
+                    <span style="font-size: 12px; font-weight: 700; color: #fff; letter-spacing: 0.5px;">FOCUS TIMER</span>
+                  </div>
+                  <div style="display: flex; gap: 6px;">
+                    <button class="timer-mode-pill active" data-timer-mode="pomodoro">Pomodoro</button>
+                    <button class="timer-mode-pill" data-timer-mode="shortBreak">Break</button>
+                    <button class="timer-mode-pill" data-timer-mode="stopwatch">Stopwatch</button>
+                  </div>
+                </div>
+
+                <!-- Subject selector -->
+                <div style="margin-bottom: 10px;">
+                  <select id="timer-active-subject" class="form-select" style="padding: 6px 10px; font-size: 12px; border-color: rgba(245, 166, 35, 0.2);">
+                    <option value="Timylabs Development">Timylabs Development</option>
+                    <option value="Reading">Reading</option>
+                    <option value="Mathematics & System Design">Mathematics & System Design</option>
+                  </select>
+                </div>
+
+                <!-- Retro Digital Timer Display -->
+                <div class="timer-digits-display">
+                  <span id="timer-hours">08</span>
+                  <span style="opacity: 0.6;">:</span>
+                  <span id="timer-minutes">08</span>
+                  <span style="opacity: 0.6;">:</span>
+                  <span id="timer-seconds">23</span>
+                </div>
+                <div class="timer-sub-labels">
+                  <span>HRS</span>
+                  <span>MIN</span>
+                  <span>SEC</span>
+                </div>
+
+                <!-- Timer Controls Row -->
+                <div class="timer-controls-row">
+                  <button id="btn-timer-reset" class="btn-timer-secondary" title="Reset Session">
+                    ↺
+                  </button>
+                  <button id="btn-timer-play" class="btn-timer-primary" title="Start Focus Timer">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+                  </button>
+                  <button class="btn-timer-secondary" onclick="window.switchView('focus')" title="Zen Mode Fullscreen">
+                    ⛶
+                  </button>
+                </div>
+              </div>
+
+              <!-- Focus Overview Widget -->
+              <div class="glass-card">
+                <div class="card-header" style="margin-bottom: 12px;">
+                  <div class="card-title-group">
+                    <span class="card-icon">🎯</span>
+                    <h3 class="card-title">Focus Overview</h3>
+                  </div>
+                </div>
+
+                <div class="focus-overview-body">
+                  <div class="focus-stat-rows">
+                    <div class="focus-stat-item">
+                      <span class="label">Today Focus</span>
+                      <span id="stat-today-focus" class="val">0s</span>
+                    </div>
+                    <div class="focus-stat-item">
+                      <span class="label">This Week</span>
+                      <span id="stat-week-focus" class="val">14h 15m</span>
+                    </div>
+                    <div class="focus-stat-item">
+                      <span class="label">This Month</span>
+                      <span id="stat-month-focus" class="val">56h 42m</span>
+                    </div>
+                  </div>
+
+                  <!-- Radial SVG Goal Ring -->
+                  <div class="focus-circle-progress">
+                    <svg width="88" height="88">
+                      <circle cx="44" cy="44" r="38" stroke="rgba(255, 255, 255, 0.08)" stroke-width="7" fill="none"></circle>
+                      <circle id="radial-circle-bar" cx="44" cy="44" r="38" stroke="var(--accent-gold)" stroke-width="7" stroke-linecap="round" fill="none" style="transition: stroke-dashoffset 0.6s ease;"></circle>
+                    </svg>
+                    <div class="focus-circle-text">
+                      <span id="radial-goal-percent" class="focus-circle-percent">82%</span>
+                      <span class="focus-circle-sub">Weekly Goal</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Countdowns Widget -->
+              <div class="glass-card">
+                <div class="card-header">
+                  <div class="card-title-group">
+                    <span class="card-icon">📅</span>
+                    <h3 class="card-title">Countdowns</h3>
+                  </div>
+                  <button id="btn-add-countdown-modal" class="btn-icon-subtle" title="Add Countdown">+</button>
+                </div>
+
+                <div id="countdowns-list-container" class="countdowns-list">
+                  <!-- Dynamically rendered -->
+                </div>
+                
+                <div style="text-align: center; margin-top: 12px;">
+                  <a href="#" onclick="window.switchView('events'); return false;" style="font-size: 11px; color: var(--text-dim); text-decoration: none;">View all events →</a>
+                </div>
+              </div>
+
+              <!-- Tasks Widget -->
+              <div class="glass-card">
+                <div class="card-header">
+                  <div class="card-title-group">
+                    <span class="card-icon">✓</span>
+                    <h3 class="card-title">Tasks</h3>
+                  </div>
+                  <button id="btn-add-task-modal" class="btn-icon-subtle" title="Add Task">+</button>
+                </div>
+
+                <div class="tasks-tabs-row">
+                  <button class="task-tab-btn active" data-task-tab="todo">To-Do</button>
+                  <button class="task-tab-btn" data-task-tab="inprogress">In Progress</button>
+                  <button class="task-tab-btn" data-task-tab="done">Done</button>
+                </div>
+
+                <div id="tasks-items-list" class="task-items-list">
+                  <!-- Dynamically rendered -->
+                </div>
+
+                <div style="text-align: center; margin-top: 14px;">
+                  <a href="#" onclick="window.switchView('tasks'); return false;" style="font-size: 11px; color: var(--text-dim); text-decoration: none;">View all tasks →</a>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 2: EVENTS & SCHEDULE (Requested by User)
+             ================================================================ -->
+        <section id="view-events" class="app-view">
+          <div style="max-width: 1300px; margin: 0 auto;">
+            <div class="events-toolbar">
+              <div>
+                <h2 style="font-size: 24px; font-weight: 800; color: #fff;">📅 Study Schedule & Events</h2>
+                <p style="font-size: 13px; color: var(--text-dim);">Manage study blocks, exam preparation milestones, and assignment deadlines.</p>
+              </div>
+              <div style="display: flex; gap: 10px;">
+                <button class="btn-pill-amber" onclick="window.eventsManager.exportAllToICal()" style="background: rgba(255, 255, 255, 0.08); color: #fff; border: 1px solid var(--card-border-subtle);">
+                  📥 Export .ICS Calendar
+                </button>
+                <button id="btn-add-event-modal" class="btn-pill-amber">
+                  <span>+</span> Add Event
+                </button>
+              </div>
+            </div>
+
+            <!-- Event Filters -->
+            <div class="events-filter-chips" style="margin-bottom: 20px;">
+              <span class="event-chip active" data-event-filter="all">All Events</span>
+              <span class="event-chip" data-event-filter="exam">🎯 Exams</span>
+              <span class="event-chip" data-event-filter="assignment">📝 Assignments</span>
+              <span class="event-chip" data-event-filter="study">📖 Study Sessions</span>
+              <span class="event-chip" data-event-filter="lecture">🎓 Lectures</span>
+            </div>
+
+            <!-- Event Cards Grid -->
+            <div id="events-cards-grid" class="events-calendar-grid">
+              <!-- Dynamically populated by eventsManager -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 3: STATS / STUDY INSIGHTS (Reference Image 2)
+             ================================================================ -->
+        <section id="view-stats" class="app-view">
+          <div style="max-width: 1280px; margin: 0 auto;">
+            
+            <div class="insights-header-section">
+              <h2 class="insights-title">Study Insights</h2>
+              <div class="insights-subtitle">
+                <span>✨</span>
+                <span>Detailed analysis of your study sessions</span>
+              </div>
+
+              <!-- Time Filter Bar -->
+              <div class="time-filter-bar">
+                <button class="time-filter-btn active" data-analytics-filter="7D">📅 7D</button>
+                <button class="time-filter-btn" data-analytics-filter="14D">📅 14D</button>
+                <button class="time-filter-btn" data-analytics-filter="30D">📅 30D</button>
+                <button class="time-filter-btn" data-analytics-filter="Year">📅 Year</button>
+                <button class="time-filter-btn" data-analytics-filter="All">👓 All Time</button>
+                <button class="time-filter-btn" data-analytics-filter="Custom">⏱ Custom</button>
+              </div>
+              <div class="filter-disclaimer">Applies to Focus share and Session logs below.</div>
+            </div>
+
+            <!-- Weekly Study Report Card Widget -->
+            <div class="glass-card" style="margin-bottom: 24px;">
+              <div class="card-header" style="margin-bottom: 12px;">
+                <div class="card-title-group">
+                  <span class="card-icon">📜</span>
+                  <div>
+                    <h3 class="card-title">Weekly Scholar Report Card</h3>
+                    <div style="font-size: 11px; color: var(--text-muted);">Productivity breakdown & flow score</div>
+                  </div>
+                </div>
+              </div>
+              <div id="weekly-report-card-container">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+
+            <!-- By Event (Focus Share Donut Chart) -->
+            <div class="glass-card" style="margin-bottom: 24px;">
+              <div class="card-header" style="margin-bottom: 12px;">
+                <div class="card-title-group">
+                  <span class="card-icon">🌓</span>
+                  <div>
+                    <h3 class="card-title">By Event</h3>
+                    <div style="font-size: 11px; color: var(--text-muted);">Focus share by event/category</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="donut-share-container">
+                <div class="donut-chart-box">
+                  <canvas id="donutChartCanvas" width="190" height="190"></canvas>
+                </div>
+                <div id="donut-bars-container" class="donut-bars-list">
+                  <!-- Dynamically populated -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Yearly Focus Heatmap (GitHub Style 52 Weeks) -->
+            <div class="glass-card heatmap-card">
+              <div class="card-header" style="margin-bottom: 10px;">
+                <div class="card-title-group">
+                  <span class="card-icon">📅</span>
+                  <div>
+                    <h3 class="card-title">Yearly Focus Heatmap</h3>
+                    <div style="font-size: 11px; color: var(--text-muted);">Full calendar year — not affected by the date filter above</div>
+                  </div>
+                </div>
+                <select class="form-select" style="width: 100px; padding: 4px 8px; font-size: 12px;">
+                  <option value="2026">2026</option>
+                  <option value="2025">2025</option>
+                </select>
+              </div>
+
+              <div class="heatmap-sub-info">
+                <span style="color: var(--accent-gold);">⚡</span>
+                <div>
+                  <strong style="color: #fff;">Focus Activity</strong>
+                  <div style="font-size: 11px; color: var(--text-muted);">
+                    <span id="heatmap-active-days">11 active days</span> · <span id="heatmap-total-focus">28h 57m total focus</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="heatmap-scroll-wrapper">
+                <div class="heatmap-grid-table">
+                  <!-- Month labels across top -->
+                  <div class="heatmap-months-row">
+                    <span class="heatmap-month-label">Jan</span>
+                    <span class="heatmap-month-label">Feb</span>
+                    <span class="heatmap-month-label">Mar</span>
+                    <span class="heatmap-month-label">Apr</span>
+                    <span class="heatmap-month-label">May</span>
+                    <span class="heatmap-month-label">Jun</span>
+                    <span class="heatmap-month-label">Jul</span>
+                    <span class="heatmap-month-label">Aug</span>
+                    <span class="heatmap-month-label">Sep</span>
+                    <span class="heatmap-month-label">Oct</span>
+                    <span class="heatmap-month-label">Nov</span>
+                    <span class="heatmap-month-label">Dec</span>
+                  </div>
+
+                  <div class="heatmap-days-container">
+                    <!-- Day rows on left -->
+                    <div class="heatmap-day-labels">
+                      <span>Mon</span>
+                      <span>Wed</span>
+                      <span>Fri</span>
+                    </div>
+
+                    <!-- 52 columns of day squares -->
+                    <div id="heatmap-weeks-columns" class="heatmap-weeks-columns">
+                      <!-- Rendered by analyticsEngine.renderYearlyHeatmap() -->
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Heatmap Legend -->
+              <div class="heatmap-legend-row">
+                <span>Less</span>
+                <div class="heatmap-legend-squares">
+                  <span class="heatmap-cell level-0"></span>
+                  <span class="heatmap-cell level-1"></span>
+                  <span class="heatmap-cell level-2"></span>
+                  <span class="heatmap-cell level-3"></span>
+                  <span class="heatmap-cell level-4"></span>
+                  <span class="heatmap-cell level-5"></span>
+                </div>
+                <span>More</span>
+              </div>
+            </div>
+
+            <!-- Session Logs Table -->
+            <div class="glass-card session-logs-card">
+              <div class="card-header">
+                <div class="card-title-group">
+                  <span class="card-icon">📋</span>
+                  <div>
+                    <h3 class="card-title">Session Logs</h3>
+                    <div style="font-size: 11px; color: var(--text-muted);">All sessions in your selected period (newest first)</div>
+                  </div>
+                </div>
+                <button id="btn-export-sessions-csv" class="btn-pill-amber">
+                  📥 Export CSV
+                </button>
+              </div>
+
+              <div style="overflow-x: auto;">
+                <table class="logs-table">
+                  <thead>
+                    <tr>
+                      <th>Date & Time</th>
+                      <th>Subject / Event</th>
+                      <th>Category</th>
+                      <th>Duration</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="session-logs-tbody">
+                    <!-- Dynamically populated -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 4: FOCUS ZEN SPACE (Fullscreen Immersion Mode)
+             ================================================================ -->
+        <section id="view-focus" class="app-view">
+          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 75vh; text-align: center;">
+            <div style="font-family: var(--font-digital); font-size: 12px; color: var(--accent-gold); letter-spacing: 2px; margin-bottom: 12px;">
+              // IMMERSIVE ZEN FOCUS //
+            </div>
+            <h2 id="zen-active-subject" style="font-size: 32px; font-weight: 800; color: #fff; margin-bottom: 24px;">
+              Timylabs Development
+            </h2>
+
+            <div style="background: rgba(14, 21, 38, 0.85); border: 2px solid var(--accent-gold); border-radius: 24px; padding: 40px 60px; box-shadow: 0 0 50px rgba(245, 166, 35, 0.25);">
+              <div class="timer-digits-display" style="font-size: 72px; padding: 0;">
+                <span id="zen-hours">00</span>:<span id="zen-minutes">25</span>:<span id="zen-seconds">00</span>
+              </div>
+              <div style="display: flex; justify-content: center; gap: 20px; margin-top: 28px;">
+                <button class="btn-start-focus" onclick="window.focusTimer.toggle()" style="font-size: 16px; padding: 12px 28px;">
+                  Toggle Timer (Spacebar)
+                </button>
+                <button class="btn-pill-amber" onclick="window.focusTimer.reset()" style="background: rgba(255, 255, 255, 0.1); color: #fff;">
+                  ↺ Reset
+                </button>
+              </div>
+            </div>
+
+            <p style="margin-top: 30px; font-size: 13px; color: var(--text-dim); max-width: 500px;">
+              Take a slow breath. Relax your shoulders. Let the pixel anime atmosphere carry your momentum.
+            </p>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 5: HABITS EXPANDED
+             ================================================================ -->
+        <section id="view-habits" class="app-view">
+          <div style="max-width: 1000px; margin: 0 auto;">
+            <h2 style="font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 20px;">⚡ Habits & Daily Streaks</h2>
+            <div class="glass-card">
+              <div id="habits-expanded-container">
+                <!-- Uses habitsManager -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 6: TASKS EXPANDED
+             ================================================================ -->
+        <section id="view-tasks" class="app-view">
+          <div style="max-width: 1000px; margin: 0 auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+              <h2 style="font-size: 24px; font-weight: 800; color: #fff;">✓ Tasks & Objectives</h2>
+              <button class="btn-pill-amber" onclick="window.tasksManager.openAddTaskModal()">+ Add Task</button>
+            </div>
+            <div class="glass-card">
+              <div id="tasks-expanded-list">
+                <!-- Uses tasksManager -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 7: NOTES & SCRATCHPAD
+             ================================================================ -->
+        <section id="view-notes" class="app-view">
+          <div style="max-width: 1000px; margin: 0 auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <h2 style="font-size: 24px; font-weight: 800; color: #fff;">📝 Study Notes & Scratchpad</h2>
+              <span style="font-size: 12px; color: var(--accent-gold); font-family: var(--font-digital);">AUTOSAVED TO LOCALSTORAGE</span>
+            </div>
+            <div class="glass-card" style="padding: 16px;">
+              <textarea id="notes-textarea" class="form-input" style="height: 60vh; resize: vertical; font-family: 'Consolas', monospace; font-size: 14px; line-height: 1.6;" placeholder="Jot down quick formulas, reminders, reading notes..."></textarea>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 8: SETTINGS & CUSTOMIZATION
+             ================================================================ -->
+        <section id="view-settings" class="app-view">
+          <div style="max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px;">
+            <h2 style="font-size: 24px; font-weight: 800; color: #fff;">⚙️ Sanctuary Settings</h2>
+
+            <!-- Wallpaper Themes -->
+            <div class="glass-card">
+              <h3 class="card-title" style="margin-bottom: 14px;">🖼 Pixel Anime Background Wallpaper</h3>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+                <div class="plan-item-card" style="cursor: pointer;" onclick="window.switchWallpaper('assets/images/pixel_ship.jpg')">
+                  <div style="height: 120px; border-radius: 8px; background: url('assets/images/pixel_ship.jpg') center/cover; margin-bottom: 8px; border: 1px solid var(--card-border);"></div>
+                  <strong style="color: #fff; font-size: 13px;">🌅 Sunset Galleon Exploration</strong>
+                  <p style="font-size: 11px; color: var(--text-muted);">16-bit nostalgic sailing ship at dusk (Reference style)</p>
+                </div>
+
+                <div class="plan-item-card" style="cursor: pointer;" onclick="window.switchWallpaper('assets/images/pixel_room.jpg')">
+                  <div style="height: 120px; border-radius: 8px; background: url('assets/images/pixel_room.jpg') center/cover; margin-bottom: 8px; border: 1px solid var(--card-border);"></div>
+                  <strong style="color: #fff; font-size: 13px;">☕ Rainy Tokyo Study Room</strong>
+                  <p style="font-size: 11px; color: var(--text-muted);">Warm desk lamp, calico cat & rainy night city</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Nostalgic Visual Effects -->
+            <div class="glass-card">
+              <h3 class="card-title" style="margin-bottom: 14px;">📺 Retro Aesthetic Effects</h3>
+              <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0;">
+                <div>
+                  <div style="font-weight: 600; color: #fff;">CRT Scanlines & Phosphor Bloom</div>
+                  <div style="font-size: 12px; color: var(--text-muted);">Simulates nostalgic arcade monitor scanlines</div>
+                </div>
+                <button class="btn-pill-amber" onclick="window.toggleCRTScanlines()">Toggle CRT</button>
+              </div>
+            </div>
+
+            <!-- Backup & Export -->
+            <div class="glass-card">
+              <h3 class="card-title" style="margin-bottom: 14px;">💾 Data Management</h3>
+              <p style="font-size: 13px; color: var(--text-dim); margin-bottom: 14px;">All your study sessions, habits, countdowns, and notes are stored locally in your browser.</p>
+              <div style="display: flex; gap: 12px;">
+                <button class="btn-pill-amber" onclick="window.analyticsEngine.exportSessionsCSV()">Export CSV</button>
+                <button class="btn-pill-amber" onclick="localStorage.clear(); location.reload();" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444;">Reset to Default Demo Data</button>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- ======================================================================
+       MODALS
+       ====================================================================== -->
+  <!-- Modal: Add Plan / Subject -->
+  <div id="modal-add-plan" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">📁 Add New Study Plan / Subject</h3>
+        <button class="btn-icon-subtle" data-close-modal="modal-add-plan">✕</button>
+      </div>
+      <form id="form-add-plan">
+        <div class="form-group">
+          <label class="form-label">Subject / Project Title</label>
+          <input type="text" id="plan-input-title" class="form-input" placeholder="e.g. Distributed Systems, Japanese Kanji" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <input type="text" id="plan-input-category" class="form-input" placeholder="e.g. STEM, Education, Language, Exam Prep" />
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-icon-subtle" data-close-modal="modal-add-plan">Cancel</button>
+          <button type="submit" class="btn-pill-amber">Create Plan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Add Event -->
+  <div id="modal-add-event" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">📅 Add Study Event / Deadline</h3>
+        <button class="btn-icon-subtle" data-close-modal="modal-add-event">✕</button>
+      </div>
+      <form id="form-add-event">
+        <div class="form-group">
+          <label class="form-label">Event Title</label>
+          <input type="text" id="event-input-title" class="form-input" placeholder="e.g. Midterm Exam, Assignment Submission" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Event Type</label>
+          <select id="event-input-type" class="form-select">
+            <option value="exam">🎯 Exam / Test</option>
+            <option value="assignment">📝 Assignment Deadline</option>
+            <option value="study">📖 Study Session Block</option>
+            <option value="lecture">🎓 Class / Lecture</option>
+          </select>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Date</label>
+            <input type="date" id="event-input-date" class="form-input" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Time</label>
+            <input type="time" id="event-input-time" class="form-input" value="10:00" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Planned Duration (Minutes)</label>
+          <input type="number" id="event-input-duration" class="form-input" value="60" min="15" step="15" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notes / Syllabus</label>
+          <textarea id="event-input-notes" class="form-input" rows="2" placeholder="Key topics to review..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-icon-subtle" data-close-modal="modal-add-event">Cancel</button>
+          <button type="submit" class="btn-pill-amber">Save Event</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Add Habit -->
+  <div id="modal-add-habit" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">⚡ Add New Habit</h3>
+        <button class="btn-icon-subtle" data-close-modal="modal-add-habit">✕</button>
+      </div>
+      <form id="form-add-habit">
+        <div class="form-group">
+          <label class="form-label">Habit Name</label>
+          <input type="text" id="habit-input-name" class="form-input" placeholder="e.g. Read 20 pages, Hydration, Review flashcards" required />
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-icon-subtle" data-close-modal="modal-add-habit">Cancel</button>
+          <button type="submit" class="btn-pill-amber">Add Habit</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Add Task -->
+  <div id="modal-add-task" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">✓ Add Task</h3>
+        <button class="btn-icon-subtle" data-close-modal="modal-add-task">✕</button>
+      </div>
+      <form id="form-add-task">
+        <div class="form-group">
+          <label class="form-label">Task Description</label>
+          <input type="text" id="task-input-title" class="form-input" placeholder="e.g. Solve chapter 4 exercises" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Priority</label>
+          <select id="task-input-priority" class="form-select">
+            <option value="High">High</option>
+            <option value="Medium" selected>Medium</option>
+            <option value="Low">Low</option>
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-icon-subtle" data-close-modal="modal-add-task">Cancel</button>
+          <button type="submit" class="btn-pill-amber">Add Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Add Countdown -->
+  <div id="modal-add-countdown" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">⏳ Add Countdown</h3>
+        <button class="btn-icon-subtle" data-close-modal="modal-add-countdown">✕</button>
+      </div>
+      <form id="form-add-countdown">
+        <div class="form-group">
+          <label class="form-label">Milestone Title</label>
+          <input type="text" id="countdown-input-title" class="form-input" placeholder="e.g. Thesis Defense, SAT Exam" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Target Date</label>
+          <input type="date" id="countdown-input-date" class="form-input" required />
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-icon-subtle" data-close-modal="modal-add-countdown">Cancel</button>
+          <button type="submit" class="btn-pill-amber">Set Countdown</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Generic Alert Notification -->
+  <div id="modal-generic-alert" class="modal-backdrop">
+    <div class="modal-card" style="text-align: center;">
+      <div style="font-size: 38px; margin-bottom: 10px;">🌟</div>
+      <h3 id="modal-alert-title" class="modal-title" style="margin-bottom: 8px;">Session Complete!</h3>
+      <p id="modal-alert-body" style="font-size: 13px; color: var(--text-dim); line-height: 1.5; margin-bottom: 20px;">
+        Awesome work! Your focus session has been saved.
+      </p>
+      <button class="btn-pill-amber" data-close-modal="modal-generic-alert" style="width: 100%; justify-content: center;">
+        Continue
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal: Quests & Achievements -->
+  <div id="modal-achievements" class="modal-backdrop">
+    <div class="modal-card" style="max-width: 680px;">
+      <div class="modal-header">
+        <h3 class="modal-title">🏆 Quests & Achievements</h3>
+        <button class="btn-icon-subtle" data-close-modal="modal-achievements">✕</button>
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <h4 style="font-size: 13px; color: var(--accent-gold); font-family: var(--font-digital); margin-bottom: 8px;">DAILY STUDY QUESTS</h4>
+        <div id="daily-quests-container">
+          <!-- Populated by gamificationEngine -->
+        </div>
+      </div>
+
+      <div>
+        <h4 style="font-size: 13px; color: var(--accent-gold); font-family: var(--font-digital); margin-bottom: 10px;">SCHOLAR MILESTONE BADGES</h4>
+        <div id="achievements-grid" class="achievements-grid">
+          <!-- Populated by gamificationEngine -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Avatar Customizer -->
+  <div id="modal-avatar-picker" class="modal-backdrop">
+    <div class="modal-card" style="max-width: 420px; text-align: center;">
+      <div class="modal-header">
+        <h3 class="modal-title">✨ Choose Companion Avatar</h3>
+        <button class="btn-icon-subtle" data-close-modal="modal-avatar-picker">✕</button>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin: 16px 0;">
+        <div class="plan-item-card" style="cursor: pointer; padding: 12px; text-align: center;" onclick="document.querySelectorAll('.user-profile-avatar, .brand-avatar img').forEach(el => el.src='assets/images/pixel_cat.jpg'); document.getElementById('modal-avatar-picker').classList.remove('open');">
+          <img src="assets/images/pixel_cat.jpg" style="width: 48px; height: 48px; border-radius: 50%; margin-bottom: 6px; border: 2px solid var(--accent-gold);" />
+          <div style="font-size: 12px; font-weight: 700; color: #fff;">Cosmic Cat</div>
+        </div>
+        <div class="plan-item-card" style="cursor: pointer; padding: 12px; text-align: center;" onclick="document.querySelectorAll('.user-profile-avatar, .brand-avatar img').forEach(el => el.src='assets/images/pixel_cat.jpg'); document.getElementById('modal-avatar-picker').classList.remove('open');">
+          <div style="font-size: 40px; margin-bottom: 4px;">🦊</div>
+          <div style="font-size: 12px; font-weight: 700; color: #fff;">Twilight Fox</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Modules -->
+  <script src="js/audio.js"></script>
+  <script src="js/timer.js"></script>
+  <script src="js/analytics.js"></script>
+  <script src="js/events.js"></script>
+  <script src="js/habits.js"></script>
+  <script src="js/tasks.js"></script>
+  <script src="js/gamification.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
