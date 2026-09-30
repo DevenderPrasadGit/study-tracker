@@ -443,6 +443,7 @@ window.setGuiTheme = function (themeName, notify = true) {
   } catch (e) {}
 
   window.syncThemeCardsUI();
+  window.spawnThemeParticles(themeName);
 
   if (notify && window.showNotificationModal) {
     const names = {
@@ -477,6 +478,55 @@ window.syncThemeCardsUI = function () {
       }
     }
   });
+};
+
+// Particle spawner for immersive themed effects
+window._themeParticleInterval = null;
+window.spawnThemeParticles = function (themeName) {
+  // Clear existing particles
+  const existing = document.querySelector('.theme-particles-overlay');
+  if (existing) existing.remove();
+  if (window._themeParticleInterval) {
+    clearInterval(window._themeParticleInterval);
+    window._themeParticleInterval = null;
+  }
+
+  if (themeName === 'default') return;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'theme-particles-overlay';
+  document.body.appendChild(overlay);
+
+  const particleClass = themeName === 'gladiator' ? 'theme-particle--ember' : 'theme-particle--orb';
+  const maxParticles = 12;
+
+  function spawnParticle() {
+    if (overlay.children.length >= maxParticles) return;
+    const p = document.createElement('div');
+    p.className = `theme-particle ${particleClass}`;
+    p.style.left = `${Math.random() * 100}%`;
+    const duration = 6 + Math.random() * 8;
+    p.style.animationDuration = `${duration}s`;
+    p.style.animationDelay = `${Math.random() * 2}s`;
+    if (themeName === 'gladiator') {
+      const size = 2 + Math.random() * 4;
+      p.style.width = `${size}px`;
+      p.style.height = `${size}px`;
+    } else {
+      const size = 3 + Math.random() * 5;
+      p.style.width = `${size}px`;
+      p.style.height = `${size}px`;
+    }
+    overlay.appendChild(p);
+    setTimeout(() => { if (p.parentNode) p.remove(); }, duration * 1000);
+  }
+
+  // Initial burst
+  for (let i = 0; i < 6; i++) {
+    setTimeout(spawnParticle, i * 400);
+  }
+  // Continuous spawning
+  window._themeParticleInterval = setInterval(spawnParticle, 1500);
 };
 
 window.initGuiThemes = function () {
