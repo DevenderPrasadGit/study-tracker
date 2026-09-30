@@ -3252,3 +3252,101 @@ body[data-theme="sorcerer"] .theme-particle--orb {
 }
 
 
+/* ==========================================================================
+   ANIMATED BACKGROUND PIXEL CHARACTERS
+   ========================================================================== */
+.bg-characters-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.bg-char {
+  position: absolute;
+  bottom: 0;
+  opacity: 0.18;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
+  transition: opacity 0.4s ease;
+}
+
+.bg-char:hover {
+  opacity: 0.35;
+}
+
+/* Umbrella character - bottom left */
+.bg-char--umbrella {
+  left: 4%;
+  bottom: -5px;
+  transform-origin: center bottom;
+  animation: charUmbrellaSway 6s ease-in-out infinite;
+}
+
+/* Gentleman character - bottom right */
+.bg-char--gentleman {
+  right: 3%;
+  bottom: -5px;
+  transform-origin: center bottom;
+  animation: charGentlemanWait 5s ease-in-out infinite;
+}
+
+/* Umbrella character: gentle swaying with occasional tilt */
+@keyframes charUmbrellaSway {
+  0%   { transform: rotate(0deg) translateY(0px); }
+  15%  { transform: rotate(-1.5deg) translateY(-3px); }
+  30%  { transform: rotate(1deg) translateY(-1px); }
+  45%  { transform: rotate(-0.5deg) translateY(-4px); }
+  60%  { transform: rotate(1.5deg) translateY(-2px); }
+  75%  { transform: rotate(-1deg) translateY(-3px); }
+  100% { transform: rotate(0deg) translateY(0px); }
+}
+
+/* Gentleman: weight-shifting wait animation (impatient, checking watch) */
+@keyframes charGentlemanWait {
+  0%   { transform: rotate(0deg) translateY(0px) scaleX(1); }
+  20%  { transform: rotate(0.8deg) translateY(-2px) scaleX(1); }
+  35%  { transform: rotate(-0.5deg) translateY(0px) scaleX(1); }
+  50%  { transform: rotate(0.3deg) translateY(-3px) scaleX(1); }
+  65%  { transform: rotate(-1deg) translateY(-1px) scaleX(1); }
+  80%  { transform: rotate(0.5deg) translateY(-2px) scaleX(1); }
+  100% { transform: rotate(0deg) translateY(0px) scaleX(1); }
+}
+
+/* Ground shadow under each character */
+.bg-char-shadow {
+  width: 48px;
+  height: 8px;
+  margin: -4px auto 0;
+  background: radial-gradient(ellipse, rgba(0,0,0,0.35) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: charShadowPulse 6s ease-in-out infinite;
+}
+
+.bg-char--gentleman .bg-char-shadow {
+  width: 44px;
+  animation-name: charShadowPulse;
+  animation-duration: 5s;
+}
+
+@keyframes charShadowPulse {
+  0%, 100% { transform: scaleX(1); opacity: 0.5; }
+  50%       { transform: scaleX(0.85); opacity: 0.3; }
+}
+
+/* Gladiator theme - tint characters with warm amber */
+body[data-theme="gladiator"] .bg-char {
+  filter: drop-shadow(0 4px 12px rgba(234, 88, 12, 0.3)) sepia(0.3) hue-rotate(-10deg);
+  opacity: 0.2;
+}
+
+/* Sorcerer theme - tint characters with purple mist */
+body[data-theme="sorcerer"] .bg-char {
+  filter: drop-shadow(0 4px 16px rgba(168, 85, 247, 0.4)) hue-rotate(60deg) saturate(1.2);
+  opacity: 0.18;
+}
+
+/* On smaller screens hide them to avoid clutter */
+@media (max-width: 900px) {
+  .bg-characters-layer { display: none; }
+}

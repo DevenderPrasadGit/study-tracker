@@ -71,7 +71,45 @@ class EventsManager {
     const modal = document.getElementById('modal-add-event');
     if (modal) {
       modal.classList.remove('open');
+      delete modal.dataset.editId;
+      const header = modal.querySelector('.modal-title');
+      if (header) header.textContent = '📅 Add Study Event / Deadline';
+      const submitBtn = modal.querySelector('button[type="submit"]');
+      if (submitBtn) submitBtn.textContent = 'Save Event';
+      document.getElementById('form-add-event').reset();
     }
+  }
+
+  openEditModal(id) {
+    const events = window.appStore ? window.appStore.getEvents() : [];
+    const evt = events.find((e) => e.id === id);
+    if (!evt) return;
+    const modal = document.getElementById('modal-add-event');
+    if (!modal) return;
+    // Pre-fill fields
+    document.getElementById('event-input-title').value = evt.title || '';
+    document.getElementById('event-input-type').value = evt.type || 'study';
+    document.getElementById('event-input-date').value = evt.date || '';
+    document.getElementById('event-input-time').value = evt.time || '10:00';
+    document.getElementById('event-input-duration').value = evt.durationMinutes || 60;
+    document.getElementById('event-input-notes').value = evt.notes || '';
+    // Skill fields
+    const skDl = document.getElementById('event-input-skill-deadline');
+    const skRem = document.getElementById('event-input-reminder');
+    const skLvl = document.getElementById('event-input-skill-level');
+    const skHrs = document.getElementById('event-input-skill-hours');
+    if (skDl) skDl.value = evt.skillDeadline || '';
+    if (skRem) skRem.value = evt.reminder || '1 day before';
+    if (skLvl) skLvl.value = evt.skillLevel || 'Intermediate';
+    if (skHrs) skHrs.value = evt.skillTargetHours || 20;
+    // Trigger skill fields visibility
+    const skillGroup = document.getElementById('event-skill-custom-fields');
+    if (skillGroup) skillGroup.style.display = evt.type === 'skill' ? 'block' : 'none';
+    // Switch modal to edit mode
+    modal.dataset.editId = id;
+    modal.querySelector('.modal-title').textContent = '✏️ Edit Event';
+    modal.querySelector('button[type="submit"]').textContent = 'Save Changes';
+    modal.classList.add('open');
   }
 
   handleCreateEvent() {
@@ -101,23 +139,16 @@ class EventsManager {
       return;
     }
 
-    const newEvent = {
-      id: 'evt_' + Date.now(),
-      title,
-      type,
-      date,
-      time,
-      durationMinutes: duration,
-      notes,
-      skillDeadline,
-      reminder,
-      skillLevel,
-      skillTargetHours,
-      completed: false
-    };
+    const changes = { title, type, date, time, durationMinutes: duration, notes, skillDeadline, reminder, skillLevel, skillTargetHours };
 
-    if (window.appStore) {
-      window.appStore.addEvent(newEvent);
+    const modal = document.getElementById('modal-add-event');
+    const editId = modal ? modal.dataset.editId : null;
+
+    if (editId) {
+      if (window.appStore) window.appStore.updateEvent(editId, changes);
+    } else {
+      const newEvent = { id: 'evt_' + Date.now(), ...changes, completed: false };
+      if (window.appStore) window.appStore.addEvent(newEvent);
     }
 
     this.closeModal();
@@ -235,6 +266,9 @@ class EventsManager {
             ${typeBadge}
           </div>
           <div style="display: flex; gap: 6px;">
+            <button class="btn-icon-subtle" title="Edit Event" onclick="window.eventsManager.openEditModal('${evt.id}')">
+              ✏️
+            </button>
             <button class="btn-icon-subtle" title="Add Note for this Event" onclick="window.openNotesForEvent('${evt.id}', '${encodeURIComponent(evt.title)}')">
               📝
             </button>

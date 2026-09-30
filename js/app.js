@@ -272,6 +272,29 @@ class AppStore {
     this.saveState();
   }
 
+  updateEvent(id, changes) {
+    const idx = this.state.events.findIndex((e) => e.id === id);
+    if (idx !== -1) {
+      this.state.events[idx] = { ...this.state.events[idx], ...changes };
+      this.saveState();
+    }
+  }
+
+  deletePlan(id) {
+    this.state.plans = this.state.plans.filter((p) => p.id !== id);
+    this.saveState();
+    this.notifyUpdates();
+  }
+
+  updatePlan(id, changes) {
+    const idx = this.state.plans.findIndex((p) => p.id === id);
+    if (idx !== -1) {
+      this.state.plans[idx] = { ...this.state.plans[idx], ...changes };
+      this.saveState();
+      this.notifyUpdates();
+    }
+  }
+
   addHabit(habit) {
     this.state.habits.push(habit);
     this.saveState();
@@ -548,9 +571,19 @@ window.renderDashboardPlans = function () {
   list.innerHTML = '';
   const plans = window.appStore.getPlans();
 
+  if (plans.length === 0) {
+    list.innerHTML = `<div style="text-align:center;padding:30px;color:var(--text-dim);grid-column:1/-1">
+      <div style="font-size:32px;margin-bottom:8px">📁</div>
+      <p>No plans yet. Click "+ New Plan" to add your first study subject!</p>
+    </div>`;
+    return;
+  }
+
   plans.forEach((plan) => {
     const card = document.createElement('div');
     card.className = 'plan-item-card';
+    const safeTitle = (plan.title || '').replace(/'/g, "\\'");
+    const safeCat = (plan.category || '').replace(/'/g, "\\'");
 
     card.innerHTML = `
       <div class="plan-item-header">
@@ -559,7 +592,10 @@ window.renderDashboardPlans = function () {
           <span class="plan-title">${plan.title}</span>
           <span class="category-tag ${plan.tagClass || 'tag-education'}">${plan.category}</span>
         </div>
-        <button class="btn-icon-subtle" title="Options">•••</button>
+        <div style="display:flex;gap:4px;">
+          <button class="btn-icon-subtle" title="Edit Plan" onclick="window.openEditPlanModal('${plan.id}','${safeTitle}','${safeCat}')" style="font-size:13px;">✏️</button>
+          <button class="btn-icon-subtle" title="Delete Plan" onclick="window.deletePlan('${plan.id}')" style="font-size:13px;">🗑</button>
+        </div>
       </div>
       <div class="plan-created-meta">📅 Created ${plan.created}</div>
       <div class="plan-stats-grid">
@@ -573,19 +609,41 @@ window.renderDashboardPlans = function () {
         </div>
         <div class="stat-cell">
           <span class="stat-label">Last Active</span>
-          <span class="stat-value" style="font-family: inherit;">${plan.lastActive}</span>
+          <span class="stat-value" style="font-family:inherit">${plan.lastActive}</span>
         </div>
         <div class="stat-cell">
           <span class="stat-label">Sessions</span>
           <span class="stat-value">${plan.sessionsCount}</span>
         </div>
-        <button class="btn-start-focus" onclick="window.startFocusWithSubject('${plan.title}')">
+        <button class="btn-start-focus" onclick="window.startFocusWithSubject('${safeTitle}')">
           ▶ Start
         </button>
       </div>
     `;
     list.appendChild(card);
   });
+};
+
+// Edit plan modal helper
+window.openEditPlanModal = function(id, title, category) {
+  const modal = document.getElementById('modal-add-plan');
+  const titleInput = document.getElementById('plan-input-title');
+  const catInput = document.getElementById('plan-input-category');
+  const modalTitle = modal.querySelector('.modal-title');
+  const submitBtn = modal.querySelector('button[type="submit"]');
+  if (!modal) return;
+  titleInput.value = title;
+  catInput.value = category;
+  modalTitle.textContent = '✏️ Edit Study Plan';
+  submitBtn.textContent = 'Save Changes';
+  modal.dataset.editId = id;
+  modal.classList.add('open');
+};
+
+window.deletePlan = function(id) {
+  if (confirm('Delete this study plan?')) {
+    window.appStore.deletePlan(id);
+  }
 };
 
 window.startFocusWithSubject = function (subjName) {
@@ -1224,30 +1282,54 @@ document.addEventListener('DOMContentLoaded', () => {
       const title = document.getElementById('plan-input-title').value.trim();
       const cat = document.getElementById('plan-input-category').value.trim();
       if (!title) return;
+      const modal = document.getElementById('modal-add-plan');
+      const editId = modal.dataset.editId;
 
-      window.appStore.addPlan({
-        id: 'plan_' + Date.now(),
-        title,
-        category: cat || 'General',
-        tagClass: 'tag-education',
-        created: new Date().toLocaleDateString('en-GB'),
-        totalFocusStr: '0s',
-        todayStr: '0s',
-        lastActive: 'Just created',
-        sessionsCount: 0
-      });
-
-      // Update timer subject options
-      const sel = document.getElementById('timer-active-subject');
-      if (sel) {
-        const opt = document.createElement('option');
-        opt.value = title;
-        opt.textContent = title;
-        sel.appendChild(opt);
+      if (editId) {
+        // Edit mode
+        window.appStore.updatePlan(editId, { title, category: cat || 'General' });
+        delete modal.dataset.editId;
+        modal.querySelector('.modal-title').textContent = '📁 Add New Study Plan / Subject';
+        modal.querySelector('button[type="submit"]').textContent = 'Create Plan';
+      } else {
+        // Create mode
+        window.appStore.addPlan({
+          id: 'plan_' + Date.now(),
+          title,
+          category: cat || 'General',
+          tagClass: 'tag-education',
+          created: new Date().toLocaleDateString('en-GB'),
+          totalFocusStr: '0s',
+          todayStr: '0s',
+          lastActive: 'Just created',
+          sessionsCount: 0
+        });
+        // Update timer subject options
+        const sel = document.getElementById('timer-active-subject');
+        if (sel) {
+          const opt = document.createElement('option');
+          opt.value = title;
+          opt.textContent = title;
+          sel.appendChild(opt);
+        }
       }
 
-      document.getElementById('modal-add-plan').classList.remove('open');
+      formAddPlan.reset();
+      modal.classList.remove('open');
       if (window.soundEngine) window.soundEngine.playClickSound();
     });
   }
+
+  // Reset plan modal state when closed via cancel/X
+  document.querySelectorAll('[data-close-modal="modal-add-plan"]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const modal = document.getElementById('modal-add-plan');
+      if (modal.dataset.editId) {
+        delete modal.dataset.editId;
+        modal.querySelector('.modal-title').textContent = '📁 Add New Study Plan / Subject';
+        modal.querySelector('button[type="submit"]').textContent = 'Create Plan';
+        document.getElementById('form-add-plan').reset();
+      }
+    });
+  });
 });
