@@ -1,6 +1,6 @@
 /**
  * Events & Study Schedule Manager
- * Allows scheduling study blocks, exams, assignment deadlines, and lectures
+ * Allows scheduling study blocks, exams, assignment deadlines, skill mastery milestones, and custom reminders
  */
 
 class EventsManager {
@@ -36,16 +36,33 @@ class EventsManager {
         this.handleCreateEvent();
       });
     }
+
+    // Toggle skill-specific input fields when skill type is chosen
+    const typeSelect = document.getElementById('event-input-type');
+    if (typeSelect) {
+      typeSelect.addEventListener('change', (e) => {
+        const skillGroup = document.getElementById('event-skill-custom-fields');
+        if (skillGroup) {
+          skillGroup.style.display = e.target.value === 'skill' ? 'block' : 'none';
+        }
+      });
+    }
   }
 
-  openAddModal() {
+  openAddModal(prefillType = null) {
     const modal = document.getElementById('modal-add-event');
     if (modal) {
       modal.classList.add('open');
-      // Set default date to today
       const dateInput = document.getElementById('event-input-date');
       if (dateInput) {
         dateInput.value = new Date().toISOString().split('T')[0];
+      }
+      if (prefillType) {
+        const typeSelect = document.getElementById('event-input-type');
+        if (typeSelect) {
+          typeSelect.value = prefillType;
+          typeSelect.dispatchEvent(new Event('change'));
+        }
       }
     }
   }
@@ -64,6 +81,20 @@ class EventsManager {
     const time = document.getElementById('event-input-time').value || '10:00';
     const duration = parseInt(document.getElementById('event-input-duration').value || '60', 10);
     const notes = document.getElementById('event-input-notes').value.trim();
+    
+    // Skill & Reminder specific inputs
+    const skillDeadline = document.getElementById('event-input-skill-deadline') 
+      ? document.getElementById('event-input-skill-deadline').value 
+      : '';
+    const reminder = document.getElementById('event-input-reminder') 
+      ? document.getElementById('event-input-reminder').value 
+      : '1 day before';
+    const skillLevel = document.getElementById('event-input-skill-level')
+      ? document.getElementById('event-input-skill-level').value
+      : 'Intermediate';
+    const skillTargetHours = document.getElementById('event-input-skill-hours')
+      ? parseInt(document.getElementById('event-input-skill-hours').value || '20', 10)
+      : 20;
 
     if (!title || !date) {
       alert('Please enter an event title and date.');
@@ -78,6 +109,10 @@ class EventsManager {
       time,
       durationMinutes: duration,
       notes,
+      skillDeadline,
+      reminder,
+      skillLevel,
+      skillTargetHours,
       completed: false
     };
 
@@ -93,160 +128,6 @@ class EventsManager {
     }
   }
 
-  renderEvents() {
-    const grid = document.getElementById('events-cards-grid');
-    if (!grid) return;
-
-    grid.innerHTML = '';
-    const events = window.appStore ? window.appStore.getEvents() : [];
-
-    const filtered = events.filter((ev) => {
-      if (this.currentFilter === 'all') return true;
-      return ev.type === this.currentFilter;
-    });
-
-    if (filtered.length === 0) {
-      grid.innerHTML = `
-        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted); background: var(--card-bg); border-radius: var(--radius-md); border: 1px dashed var(--card-border-subtle);">
-          <div style="font-size: 28px; margin-bottom: 8px;">📅</div>
-          <div style="font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 4px;">No upcoming events found</div>
-          <div style="font-size: 13px;">Click "+ Add Event" to plan study blocks, exams, or assignment deadlines!</div>
-        </div>
-      `;
-      return;
-    }
-
-    const badge = document.getElementById('nav-events-count');
-    if (badge) {
-      badge.textContent = events.length;
-    }
-
-    filtered.forEach((ev) => {
-      const card = document.createElement('div');
-      card.className = `event-card type-${ev.type}`;
-
-      // Calculate countdown string
-      const eventTime = new Date(`${ev.date}T${ev.time || '00:00'}`).getTime();
-      const diffMs = eventTime - Date.now();
-      let diffStr = '';
-      if (diffMs > 0) {
-        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-        const diffHrs = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        diffStr = diffDays > 0 ? `${diffDays}d ${diffHrs}h away` : `${diffHrs}h away`;
-      } else {
-        diffStr = 'Today / Past';
-      }
-
-      const typeLabels = {
-        exam: '🎯 Exam / Test',
-        assignment: '📝 Assignment Deadline',
-        study: '📖 Study Session Block',
-        lecture: '🎓 Class / Lecture'
-      };
-
-      card.innerHTML = `
-        <div class="event-top-row">
-          <span class="category-tag tag-education">${typeLabels[ev.type] || ev.type}</span>
-          <span style="font-size: 11px; font-family: var(--font-digital); color: var(--accent-gold); font-weight: 700;">
-            ${diffStr}
-          </span>
-        </div>
-        <div>
-          <h4 class="event-title">${ev.title}</h4>
-          ${ev.notes ? `<p style="font-size: 12px; color: var(--text-dim); margin-top: 4px;">${ev.notes}</p>` : ''}
-        </div>
-        <div class="event-datetime">
-          <span>📅 ${ev.date}</span>
-          <span>⏰ ${ev.time} (${ev.durationMinutes} mins)</span>
-        </div>
-        <div class="event-actions-bar">
-          <button class="btn-pill-amber" onclick="window.eventsManager.startFocusOnEvent('${ev.id}')">
-            ▶ Start Focus
-          </button>
-          <div style="display: flex; gap: 6px; align-items: center;">
-            <a href="${this.getGoogleCalendarUrl(ev)}" target="_blank" class="btn-icon-subtle" title="Add to Google Calendar" style="text-decoration: none; font-size: 13px;">
-              📅
-            </a>
-            <button class="btn-icon-subtle" title="Delete Event" onclick="window.eventsManager.deleteEvent('${ev.id}')">
-              🗑
-            </button>
-          </div>
-        </div>
-      `;
-      grid.appendChild(card);
-    });
-  }
-
-  getGoogleCalendarUrl(ev) {
-    const startIso = (ev.date + 'T' + (ev.time || '10:00') + ':00').replace(/[-:]/g, '');
-    const startDateObj = new Date(`${ev.date}T${ev.time || '10:00'}`);
-    const endDateObj = new Date(startDateObj.getTime() + (ev.durationMinutes || 60) * 60000);
-    const endIso = endDateObj.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-
-    const title = encodeURIComponent(`[Study] ${ev.title}`);
-    const details = encodeURIComponent(ev.notes || 'Focus session tracked via Timylabs');
-    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startIso}/${endIso}&details=${details}`;
-  }
-
-  exportAllToICal() {
-    const events = window.appStore ? window.appStore.getEvents() : [];
-    if (!events.length) {
-      alert('No events to export.');
-      return;
-    }
-
-    let ics = [
-      'BEGIN:VCALENDAR',
-      'VERSION:2.0',
-      'PRODID:-//Timylabs//Nostalgic Study Tracker//EN',
-      'CALSCALE:GREGORIAN'
-    ];
-
-    events.forEach((ev) => {
-      const startClean = (ev.date.replace(/-/g, '') + 'T' + (ev.time || '10:00').replace(/:/g, '') + '00');
-      const startMs = new Date(`${ev.date}T${ev.time || '10:00'}`).getTime();
-      const endMs = startMs + (ev.durationMinutes || 60) * 60000;
-      const endClean = new Date(endMs).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-
-      ics.push('BEGIN:VEVENT');
-      ics.push(`UID:${ev.id}@timylabs.local`);
-      ics.push(`DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`);
-      ics.push(`DTSTART:${startClean}`);
-      ics.push(`DTEND:${endClean}`);
-      ics.push(`SUMMARY:${ev.title}`);
-      ics.push(`DESCRIPTION:${(ev.notes || '').replace(/\n/g, '\\n')}`);
-      ics.push('END:VEVENT');
-    });
-
-    ics.push('END:VCALENDAR');
-    const blob = new Blob([ics.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `timylabs_study_schedule_${new Date().toISOString().split('T')[0]}.ics`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  startFocusOnEvent(eventId) {
-    const events = window.appStore ? window.appStore.getEvents() : [];
-    const ev = events.find((e) => e.id === eventId);
-    if (!ev) return;
-
-    if (window.focusTimer) {
-      window.focusTimer.setSubject(ev.title);
-      window.focusTimer.setMode('pomodoro');
-    }
-
-    if (window.switchView) {
-      window.switchView('dashboard');
-    }
-
-    if (window.focusTimer) {
-      window.focusTimer.start();
-    }
-  }
-
   deleteEvent(id) {
     if (confirm('Delete this event?')) {
       if (window.appStore) {
@@ -254,6 +135,198 @@ class EventsManager {
       }
       this.renderEvents();
     }
+  }
+
+  renderEvents() {
+    const grid = document.getElementById('events-cards-grid');
+    if (!grid) return;
+
+    grid.innerHTML = '';
+    const events = window.appStore ? window.appStore.getEvents() : [];
+
+    // Filter events
+    const filtered = events.filter((e) => {
+      if (this.currentFilter === 'all') return true;
+      return e.type === this.currentFilter;
+    });
+
+    // Update nav counter
+    const countBadge = document.getElementById('nav-events-count');
+    if (countBadge) {
+      countBadge.textContent = events.length;
+    }
+
+    if (filtered.length === 0) {
+      grid.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-dim);">
+          <div style="font-size: 32px; margin-bottom: 8px;">📅</div>
+          <p>No events found for this filter. Click "+ Add Event" to plan your next milestone or skill!</p>
+        </div>
+      `;
+      return;
+    }
+
+    filtered.forEach((evt) => {
+      const card = document.createElement('div');
+      card.className = 'glass-card event-card';
+
+      let typeBadge = '';
+      let typeBorder = 'rgba(245, 166, 35, 0.2)';
+      let icon = '📖';
+
+      switch (evt.type) {
+        case 'exam':
+          icon = '🎯';
+          typeBadge = '<span class="event-type-badge exam">EXAM</span>';
+          typeBorder = 'rgba(239, 68, 68, 0.4)';
+          break;
+        case 'assignment':
+          icon = '📝';
+          typeBadge = '<span class="event-type-badge assignment">ASSIGNMENT</span>';
+          typeBorder = 'rgba(192, 132, 252, 0.4)';
+          break;
+        case 'skill':
+          icon = '🌟';
+          typeBadge = '<span class="event-type-badge skill" style="background: rgba(45, 212, 191, 0.2); color: var(--accent-teal); border: 1px solid var(--accent-teal);">SKILL MASTERY</span>';
+          typeBorder = 'rgba(45, 212, 191, 0.4)';
+          break;
+        case 'lecture':
+          icon = '🎓';
+          typeBadge = '<span class="event-type-badge lecture">LECTURE</span>';
+          typeBorder = 'rgba(59, 130, 246, 0.4)';
+          break;
+        default:
+          icon = '📖';
+          typeBadge = '<span class="event-type-badge study">STUDY BLOCK</span>';
+          typeBorder = 'rgba(245, 166, 35, 0.4)';
+      }
+
+      card.style.borderColor = typeBorder;
+
+      // Skill extra badge
+      let skillInfoHtml = '';
+      if (evt.type === 'skill' || evt.skillDeadline) {
+        let deadlineNotice = '';
+        if (evt.skillDeadline) {
+          const daysLeft = Math.ceil((new Date(evt.skillDeadline) - new Date()) / (1000 * 60 * 60 * 24));
+          const dlText = daysLeft > 0 ? `${daysLeft} days remaining` : (daysLeft === 0 ? 'Due Today!' : 'Target Passed');
+          deadlineNotice = `<div style="font-size: 11px; color: var(--accent-teal);"><span style="color: var(--accent-gold);">⏳ Target Deadline:</span> ${evt.skillDeadline} (${dlText})</div>`;
+        }
+        skillInfoHtml = `
+          <div style="margin-top: 10px; padding: 8px 12px; background: rgba(45, 212, 191, 0.08); border-radius: 8px; border: 1px dashed rgba(45, 212, 191, 0.25);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <span style="font-size: 11px; font-weight: 700; color: #fff;">Skill Goal: ${evt.skillLevel || 'Proficiency'}</span>
+              <span style="font-size: 11px; color: var(--accent-teal); font-family: var(--font-digital);">${evt.skillTargetHours || 20}h Target</span>
+            </div>
+            ${deadlineNotice}
+          </div>
+        `;
+      }
+
+      // Reminder badge
+      const reminderPill = evt.reminder 
+        ? `<span class="reminder-tag-pill" title="Dedicated alert: ${evt.reminder}">🔔 Reminder: ${evt.reminder}</span>` 
+        : '';
+
+      card.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <span style="font-size: 20px;">${icon}</span>
+            ${typeBadge}
+          </div>
+          <div style="display: flex; gap: 6px;">
+            <button class="btn-icon-subtle" title="Add Note for this Event" onclick="window.openNotesForEvent('${evt.id}', '${encodeURIComponent(evt.title)}')">
+              📝
+            </button>
+            <button class="btn-icon-subtle" title="Delete Event" onclick="window.eventsManager.deleteEvent('${evt.id}')">
+              🗑
+            </button>
+          </div>
+        </div>
+
+        <h4 style="font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 8px; line-height: 1.4;">${evt.title}</h4>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; color: var(--text-dim); margin-bottom: 8px;">
+          <span>📅 ${evt.date}</span>
+          <span>⏰ ${evt.time}</span>
+          <span>⏱ ${evt.durationMinutes} mins</span>
+        </div>
+
+        <div style="margin-bottom: 8px;">
+          ${reminderPill}
+        </div>
+
+        ${skillInfoHtml}
+
+        ${evt.notes ? `<div style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--card-border-subtle);">${evt.notes}</div>` : ''}
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--card-border-subtle);">
+          <button class="btn-pill-amber" onclick="window.focusTimer.setSubject('${evt.title.replace(/'/g, "\\'")}'); window.switchView('focus');" style="font-size: 11px; padding: 4px 10px;">
+            ▶ Start Focus Block
+          </button>
+          <button class="btn-icon-subtle" onclick="window.eventsManager.exportSingleToGoogleCal('${evt.id}')" title="Add to Google Calendar" style="font-size: 11px; color: var(--accent-gold);">
+            + Google Cal
+          </button>
+        </div>
+      `;
+
+      grid.appendChild(card);
+    });
+  }
+
+  exportSingleToGoogleCal(eventId) {
+    const events = window.appStore ? window.appStore.getEvents() : [];
+    const evt = events.find((e) => e.id === eventId);
+    if (!evt) return;
+
+    const startDateTime = new Date(`${evt.date}T${evt.time}:00`);
+    const endDateTime = new Date(startDateTime.getTime() + (evt.durationMinutes || 60) * 60 * 1000);
+
+    const formatGCal = (d) => d.toISOString().replace(/-|:|\.\d\d\d/g, '');
+    const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(evt.title)}&dates=${formatGCal(startDateTime)}/${formatGCal(endDateTime)}&details=${encodeURIComponent(evt.notes || 'Timylabs Focus Session')}&location=Study%20Sanctuary`;
+
+    window.open(gcalUrl, '_blank');
+  }
+
+  exportAllToICal() {
+    const events = window.appStore ? window.appStore.getEvents() : [];
+    if (!events.length) {
+      alert('No events to export!');
+      return;
+    }
+
+    let icsContent = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Timylabs//Nostalgic Study Tracker//EN',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH'
+    ];
+
+    events.forEach((evt) => {
+      const startDateTime = new Date(`${evt.date}T${evt.time}:00`);
+      const endDateTime = new Date(startDateTime.getTime() + (evt.durationMinutes || 60) * 60 * 1000);
+      const formatICS = (d) => d.toISOString().replace(/-|:|\.\d\d\d/g, '').slice(0, 15) + 'Z';
+
+      icsContent.push('BEGIN:VEVENT');
+      icsContent.push(`UID:${evt.id}@timylabs.local`);
+      icsContent.push(`DTSTAMP:${formatICS(new Date())}`);
+      icsContent.push(`DTSTART:${formatICS(startDateTime)}`);
+      icsContent.push(`DTEND:${formatICS(endDateTime)}`);
+      icsContent.push(`SUMMARY:${evt.title}`);
+      icsContent.push(`DESCRIPTION:${(evt.notes || 'Timylabs Focus Session').replace(/\n/g, '\\n')}`);
+      icsContent.push('END:VEVENT');
+    });
+
+    icsContent.push('END:VCALENDAR');
+
+    const blob = new Blob([icsContent.join('\r\n')], { type: 'text/calendar;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', `study_schedule_${new Date().toISOString().split('T')[0]}.ics`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 }
 

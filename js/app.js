@@ -393,7 +393,7 @@ function initAmbientParticles() {
 }
 
 // ==========================================================================
-// View Router
+// View Router & Theme Engine
 // ==========================================================================
 window.switchView = function (viewName) {
   const views = document.querySelectorAll('.app-view');
@@ -416,13 +416,77 @@ window.switchView = function (viewName) {
     window.analyticsEngine.renderAll();
   } else if (viewName === 'events' && window.eventsManager) {
     window.eventsManager.renderEvents();
-  } else if (viewName === 'notes') {
-    const editor = document.getElementById('notes-textarea');
-    if (editor) {
-      editor.value = window.appStore.getNotes();
+  } else if (viewName === 'habits' && window.habitsManager) {
+    window.habitsManager.renderHabits();
+  } else if (viewName === 'notes' && window.notesManager) {
+    window.notesManager.populateLinkDropdowns();
+    window.notesManager.renderNotesList();
+    window.notesManager.renderActiveNoteEditor();
+  } else if (viewName === 'themes') {
+    window.syncThemeCardsUI();
+  } else if (viewName === 'focus') {
+    if (window.gamificationEngine && window.appStore) {
+      const u = window.appStore.getUser();
+      window.gamificationEngine.selectCompanion(u.companion || 'cat', false);
     }
   }
 };
+
+window.setGuiTheme = function (themeName, notify = true) {
+  if (!['default', 'gladiator', 'sorcerer'].includes(themeName)) {
+    themeName = 'default';
+  }
+  document.body.setAttribute('data-theme', themeName);
+  document.documentElement.setAttribute('data-theme', themeName);
+  try {
+    localStorage.setItem('timylabs_gui_theme', themeName);
+  } catch (e) {}
+
+  window.syncThemeCardsUI();
+
+  if (notify && window.showNotificationModal) {
+    const names = {
+      default: 'Sunset Sanctuary (Pixel Anime)',
+      gladiator: 'Medieval Gladiator (Swords & Shields)',
+      sorcerer: 'Sorcerer Magic Academy (Arcane Archives)'
+    };
+    window.showNotificationModal('Theme Equipped! 🎨', `Sanctuary appearance updated to ${names[themeName] || themeName}.`);
+  }
+};
+
+window.syncThemeCardsUI = function () {
+  let curTheme = 'default';
+  try {
+    curTheme = localStorage.getItem('timylabs_gui_theme') || 'default';
+  } catch (e) {}
+
+  document.querySelectorAll('.theme-card-showcase').forEach((card) => {
+    const tid = card.getAttribute('data-theme-id');
+    const btn = card.querySelector('.btn-pill-amber');
+    if (tid === curTheme) {
+      card.classList.add('active');
+      if (btn) {
+        btn.textContent = '✓ Active Theme';
+        btn.style.opacity = '1';
+      }
+    } else {
+      card.classList.remove('active');
+      if (btn) {
+        btn.textContent = 'Equip Theme';
+        btn.style.opacity = '0.85';
+      }
+    }
+  });
+};
+
+window.initGuiThemes = function () {
+  let saved = 'default';
+  try {
+    saved = localStorage.getItem('timylabs_gui_theme') || 'default';
+  } catch (e) {}
+  window.setGuiTheme(saved, false);
+};
+
 
 // ==========================================================================
 // Dashboard Renderers
@@ -532,15 +596,386 @@ window.renderFocusOverview = function () {
 window.switchWallpaper = function (wallpaperUrl) {
   const bg = document.getElementById('app-wallpaper');
   if (bg) {
-    bg.style.backgroundImage = `url('${wallpaperUrl}')`;
+    if (wallpaperUrl.startsWith('linear-gradient') || wallpaperUrl.startsWith('radial-gradient')) {
+      bg.style.backgroundImage = wallpaperUrl;
+    } else {
+      bg.style.backgroundImage = `url('${wallpaperUrl}')`;
+    }
   }
   window.appStore.updateSettings({ wallpaper: wallpaperUrl });
+  
+  // Highlight active wallpaper card in gallery
+  document.querySelectorAll('.wallpaper-card').forEach((card) => {
+    const cardUrl = card.getAttribute('data-wallpaper-url');
+    if (cardUrl === wallpaperUrl) {
+      card.classList.add('active');
+    } else {
+      card.classList.remove('active');
+    }
+  });
+
+  if (window.soundEngine) {
+    window.soundEngine.playClickSound();
+  }
+};
+
+window.selectWallpaperCard = function (cardEl) {
+  const url = cardEl.getAttribute('data-wallpaper-url');
+  if (url) {
+    window.switchWallpaper(url);
+  }
+};
+
+window.handleWallpaperFileUpload = function (e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function (event) {
+    const dataUrl = event.target.result;
+    
+    // Create new custom wallpaper card in grid
+    const grid = document.getElementById('wallpaper-preset-grid');
+    const customCard = document.createElement('div');
+    customCard.className = 'wallpaper-card active';
+    customCard.setAttribute('data-wallpaper-url', dataUrl);
+    customCard.onclick = function() { window.selectWallpaperCard(this); };
+    customCard.innerHTML = `
+      <div class="wallpaper-thumb" style="background-image: url('${dataUrl}');">
+        <span class="wallpaper-active-badge">✓ Active</span>
+      </div>
+      <div class="wallpaper-info">
+        <div class="wallpaper-name">Custom Upload</div>
+        <div class="wallpaper-tag">User File</div>
+      </div>
+    `;
+    
+    if (grid) {
+      grid.prepend(customCard);
+    }
+    
+    window.switchWallpaper(dataUrl);
+    window.showNotificationModal('✨ Wallpaper Updated!', 'Your custom wallpaper has been applied successfully.');
+  };
+  reader.readAsDataURL(file);
+};
+
+window.applyCustomWallpaperUrl = function () {
+  const input = document.getElementById('custom-wallpaper-url-input');
+  if (!input || !input.value.trim()) return;
+
+  const url = input.value.trim();
+  const grid = document.getElementById('wallpaper-preset-grid');
+  const customCard = document.createElement('div');
+  customCard.className = 'wallpaper-card active';
+  customCard.setAttribute('data-wallpaper-url', url);
+  customCard.onclick = function() { window.selectWallpaperCard(this); };
+  customCard.innerHTML = `
+    <div class="wallpaper-thumb" style="background-image: url('${url}');">
+      <span class="wallpaper-active-badge">✓ Active</span>
+    </div>
+    <div class="wallpaper-info">
+      <div class="wallpaper-name">Custom Web Image</div>
+      <div class="wallpaper-tag">Direct URL</div>
+    </div>
+  `;
+  
+  if (grid) {
+    grid.prepend(customCard);
+  }
+
+  window.switchWallpaper(url);
+  input.value = '';
+  window.showNotificationModal('✨ Custom Wallpaper Applied!', 'Custom background image URL loaded!');
+};
+
+window.updateWallpaperFilters = function () {
+  const bg = document.getElementById('app-wallpaper');
+  if (!bg) return;
+
+  const brightness = document.getElementById('slider-wallpaper-brightness')?.value || '0.65';
+  const blur = document.getElementById('slider-wallpaper-blur')?.value || '0';
+  const saturation = document.getElementById('slider-wallpaper-saturation')?.value || '1.15';
+
+  bg.style.filter = `brightness(${brightness}) blur(${blur}px) saturate(${saturation}) contrast(1.05)`;
+
+  const lBright = document.getElementById('label-val-brightness');
+  const lBlur = document.getElementById('label-val-blur');
+  const lSat = document.getElementById('label-val-saturation');
+
+  if (lBright) lBright.textContent = `${Math.round(brightness * 100)}%`;
+  if (lBlur) lBlur.textContent = `${blur}px`;
+  if (lSat) lSat.textContent = `${Math.round(saturation * 100)}%`;
+};
+
+window.resetWallpaperSettings = function () {
+  const sBright = document.getElementById('slider-wallpaper-brightness');
+  const sBlur = document.getElementById('slider-wallpaper-blur');
+  const sSat = document.getElementById('slider-wallpaper-saturation');
+
+  if (sBright) sBright.value = 0.65;
+  if (sBlur) sBlur.value = 0;
+  if (sSat) sSat.value = 1.15;
+
+  window.updateWallpaperFilters();
+  window.switchWallpaper('assets/images/pixel_ship.jpg');
+};
+
+// ==========================================================================
+// Interactive Flashcard Engine
+// ==========================================================================
+const flashcardDecks = {
+  cs: [
+    {
+      label: "COMPUTER SCIENCE 101 • CARD 1 OF 3",
+      q: "What is the time complexity of searching in a balanced Binary Search Tree (BST)?",
+      ansTitle: "O(log N)",
+      ansText: "In a balanced BST, each comparison eliminates half of the remaining nodes, yielding a logarithmic time complexity."
+    },
+    {
+      label: "COMPUTER SCIENCE 101 • CARD 2 OF 3",
+      q: "What is the difference between Process and Thread?",
+      ansTitle: "Memory Isolation vs Shared Space",
+      ansText: "A process has its own separate virtual address memory space. Threads share the memory space of their parent process."
+    },
+    {
+      label: "COMPUTER SCIENCE 101 • CARD 3 OF 3",
+      q: "Explain how a Hash Table achieves O(1) average lookup time.",
+      ansTitle: "Hash Function & Array Indexing",
+      ansText: "A hash function maps keys directly to array bucket indices, providing near instantaneous direct array access."
+    }
+  ],
+  kanji: [
+    {
+      label: "JAPANESE KANJI • CARD 1 OF 3",
+      q: "What is the meaning and reading of the kanji: 夢 ?",
+      ansTitle: "Dream (Yume / ム)",
+      ansText: "Representing aspirations and vision. Onyomi: MU (ム), Kunyomi: yume (ゆめ)."
+    },
+    {
+      label: "JAPANESE KANJI • CARD 2 OF 3",
+      q: "What is the meaning and reading of the kanji: 学 ?",
+      ansTitle: "Study / Learning (Gaku / Manabu)",
+      ansText: "Used in Gakkou (School), Gakusei (Student). Onyomi: GAKU (ガク), Kunyomi: mana(bu)."
+    },
+    {
+      label: "JAPANESE KANJI • CARD 3 OF 3",
+      q: "What is the meaning and reading of the kanji: 光 ?",
+      ansTitle: "Light / Ray (Hikari / Kou)",
+      ansText: "Used in Hikari (Light) and Koukourou (Beam). Onyomi: KOU (コウ), Kunyomi: hikari."
+    }
+  ],
+  sysdesign: [
+    {
+      label: "SYSTEM DESIGN • CARD 1 OF 3",
+      q: "What is the CAP Theorem in Distributed Systems?",
+      ansTitle: "Consistency, Availability, Partition Tolerance",
+      ansText: "A distributed system can guarantee at most two of the three properties simultaneously in the presence of network partitions."
+    },
+    {
+      label: "SYSTEM DESIGN • CARD 2 OF 3",
+      q: "What is Consistent Hashing and why is it useful?",
+      ansTitle: "Minimizes Key Remapping during Resizing",
+      ansText: "Consistently hashes nodes and keys onto a ring structure so adding or removing servers only affects k/N keys."
+    },
+    {
+      label: "SYSTEM DESIGN • CARD 3 OF 3",
+      q: "What is the difference between Vertical & Horizontal Scaling?",
+      ansTitle: "Scale Up vs Scale Out",
+      ansText: "Vertical adding RAM/CPU to single server. Horizontal adding more commodity machines behind load balancer."
+    }
+  ],
+  math: [
+    {
+      label: "MATH & LOGIC • CARD 1 OF 3",
+      q: "What is Euler's Identity formula?",
+      ansTitle: "e^(iπ) + 1 = 0",
+      ansText: "Linking 5 fundamental mathematical constants: e, i, π, 1, and 0 in an elegant equation."
+    },
+    {
+      label: "MATH & LOGIC • CARD 2 OF 3",
+      q: "What is the derivative of f(x) = e^(2x)?",
+      ansTitle: "f'(x) = 2e^(2x)",
+      ansText: "Using the chain rule: derivative of e^u is u' * e^u, where u = 2x and u' = 2."
+    },
+    {
+      label: "MATH & LOGIC • CARD 3 OF 3",
+      q: "What is De Morgan's Law in Boolean Logic?",
+      ansTitle: "¬(A ∧ B) = ¬A ∨ ¬B",
+      ansText: "The negation of a conjunction is the disjunction of the negations."
+    }
+  ]
+};
+
+let activeDeckKey = 'cs';
+let activeDeckIndex = 0;
+
+window.renderCurrentFlashcard = function () {
+  const deck = flashcardDecks[activeDeckKey] || flashcardDecks.cs;
+  const card = deck[activeDeckIndex % deck.length];
+
+  const wrapper = document.querySelector('.flashcard-3d-wrapper');
+  if (wrapper) wrapper.classList.remove('flipped');
+
+  const labelEl = document.getElementById('fc-deck-label');
+  const qEl = document.getElementById('fc-question-text');
+  const ansTitleEl = document.getElementById('fc-answer-title');
+  const ansTextEl = document.getElementById('fc-answer-text');
+
+  if (labelEl) labelEl.textContent = card.label;
+  if (qEl) qEl.textContent = card.q;
+  if (ansTitleEl) ansTitleEl.textContent = card.ansTitle;
+  if (ansTextEl) ansTextEl.textContent = card.ansText;
+};
+
+window.switchFlashcardDeck = function (deckKey) {
+  activeDeckKey = deckKey;
+  activeDeckIndex = 0;
+
+  document.querySelectorAll('#view-flashcards .events-filter-chips .event-chip').forEach(chip => chip.classList.remove('active'));
+  const activeChip = document.getElementById(`chip-deck-${deckKey}`);
+  if (activeChip) activeChip.classList.add('active');
+
+  window.renderCurrentFlashcard();
+  if (window.soundEngine) window.soundEngine.playClickSound();
+};
+
+window.prevFlashcard = function () {
+  const deck = flashcardDecks[activeDeckKey] || flashcardDecks.cs;
+  activeDeckIndex = (activeDeckIndex - 1 + deck.length) % deck.length;
+  window.renderCurrentFlashcard();
+  if (window.soundEngine) window.soundEngine.playClickSound();
+};
+
+window.nextFlashcard = function () {
+  const deck = flashcardDecks[activeDeckKey] || flashcardDecks.cs;
+  activeDeckIndex = (activeDeckIndex + 1) % deck.length;
+  window.renderCurrentFlashcard();
+  if (window.soundEngine) window.soundEngine.playClickSound();
+};
+
+// ==========================================================================
+// Interactive AI Study Assistant Simulation
+// ==========================================================================
+window.sendAiUserMessage = function () {
+  const input = document.getElementById('ai-chat-input');
+  if (!input || !input.value.trim()) return;
+
+  const text = input.value.trim();
+  input.value = '';
+
+  window.appendChatMessage('user', text);
+  window.triggerAiResponse(text);
+};
+
+window.sendAiPresetPrompt = function (promptText) {
+  window.appendChatMessage('user', promptText);
+  window.triggerAiResponse(promptText);
+};
+
+window.appendChatMessage = function (sender, text) {
+  const container = document.getElementById('ai-chat-messages');
+  if (!container) return;
+
+  const msgDiv = document.createElement('div');
+  msgDiv.className = `chat-msg ${sender === 'user' ? 'user-msg' : 'ai-msg'}`;
+  
+  const avatar = sender === 'user' ? '👤' : '🤖';
+  const name = sender === 'user' ? 'You' : 'TimyAI Companion';
+
+  msgDiv.innerHTML = `
+    <div class="chat-avatar">${avatar}</div>
+    <div class="chat-bubble">
+      <div style="font-weight: 700; color: ${sender === 'user' ? '#fff' : 'var(--accent-gold-light)'}; font-size: 11px; margin-bottom: 4px;">${name}</div>
+      ${text}
+    </div>
+  `;
+
+  container.appendChild(msgDiv);
+  container.scrollTop = container.scrollHeight;
+};
+
+window.triggerAiResponse = function (userQuery) {
+  const container = document.getElementById('ai-chat-messages');
+  
+  // Add temporary typing indicator
+  const typingDiv = document.createElement('div');
+  typingDiv.className = 'chat-msg ai-msg';
+  typingDiv.id = 'ai-typing-indicator';
+  typingDiv.innerHTML = `
+    <div class="chat-avatar">🤖</div>
+    <div class="chat-bubble" style="font-style: italic; color: var(--text-dim);">
+      TimyAI is formulating response... ✨
+    </div>
+  `;
+  if (container) {
+    container.appendChild(typingDiv);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  setTimeout(() => {
+    const indicator = document.getElementById('ai-typing-indicator');
+    if (indicator) indicator.remove();
+
+    let response = "That's an excellent study question! Focusing on deep comprehension, breaking down topics into bite-sized concepts, and reviewing actively with Pomodoro cycles will maximize your retention.";
+
+    const q = userQuery.toLowerCase();
+    if (q.includes('pomodoro')) {
+      response = "<strong>Pomodoro Strategy:</strong><br/>1. Work for 25 mins with zero distractions.<br/>2. Take a 5-min break (stretch, hydrate).<br/>3. After 4 cycles, reward yourself with a long 20-30 min break!";
+    } else if (q.includes('spaced repetition')) {
+      response = "<strong>Spaced Repetition Key Points:</strong><br/>• Review material right before you are likely to forget it.<br/>• Intervals increase: Day 1 → Day 3 → Day 7 → Day 14 → Day 30.<br/>• Maximizes long-term memory consolidation!";
+    } else if (q.includes('quiz')) {
+      response = "<strong>System Design Quiz Time:</strong><br/>1. What is the main difference between SQL (relational) and NoSQL (document/key-value) databases?<br/>2. How does a CDN improve latency for static media assets?<br/>3. What is a Reverse Proxy?";
+    } else if (q.includes('motivation')) {
+      response = "🌟 <em>'Action creates momentum. You don't need to feel ready to begin—start with 5 focused minutes today!'</em> You've got this, Scholar!";
+    }
+
+    window.appendChatMessage('ai', response);
+  }, 750);
+};
+
+// ==========================================================================
+// Resource Filter Engine
+// ==========================================================================
+window.filterResources = function (query) {
+  const cards = document.querySelectorAll('#resources-grid .resource-card');
+  const q = query.toLowerCase();
+
+  cards.forEach(card => {
+    const title = card.querySelector('h4')?.textContent.toLowerCase() || '';
+    const desc = card.querySelector('p')?.textContent.toLowerCase() || '';
+    if (title.includes(q) || desc.includes(q)) {
+      card.style.display = 'block';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+};
+
+window.filterResourcesCategory = function (cat) {
+  const cards = document.querySelectorAll('#resources-grid .resource-card');
+  cards.forEach(card => {
+    if (cat === 'all') {
+      card.style.display = 'block';
+    } else {
+      const tag = card.querySelector('.user-premium-tag')?.textContent.toLowerCase() || '';
+      if ((cat === 'cs' && tag.includes('handbook')) ||
+          (cat === 'math' && tag.includes('video')) ||
+          (cat === 'notes' && tag.includes('article'))) {
+        card.style.display = 'block';
+      } else {
+        card.style.display = 'none';
+      }
+    }
+  });
 };
 
 window.toggleCRTScanlines = function () {
   const isActive = document.body.classList.toggle('crt-active');
   const btn = document.getElementById('btn-toggle-crt');
   if (btn) btn.classList.toggle('active', isActive);
+  const btnWallpaper = document.getElementById('btn-wallpaper-crt-toggle');
+  if (btnWallpaper) btnWallpaper.classList.toggle('active', isActive);
   window.appStore.updateSettings({ crtScanlines: isActive });
 };
 
@@ -606,10 +1041,13 @@ document.addEventListener('DOMContentLoaded', () => {
   window.renderFocusOverview();
 
   // Init Modules
+  if (window.initGuiThemes) window.initGuiThemes();
   if (window.focusTimer) window.focusTimer.init();
   if (window.habitsManager) window.habitsManager.init();
   if (window.tasksManager) window.tasksManager.init();
   if (window.eventsManager) window.eventsManager.init();
+  if (window.notesManager) window.notesManager.init();
+  if (window.musicStationManager) window.musicStationManager.init();
   if (window.analyticsEngine) window.analyticsEngine.init();
   if (window.gamificationEngine) window.gamificationEngine.init();
 

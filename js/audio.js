@@ -1,7 +1,7 @@
 /**
- * Web Audio API Ambient Sound Synthesizer & Retro Chimes
- * Generates realistic rain, vinyl crackle, cozy fire, white noise, and 8-bit retro sound FX
- * completely in code - 100% offline, zero network assets required!
+ * Web Audio API Ambient Sound Synthesizer & Modern Streaming Music Station
+ * Generates realistic rain, vinyl crackle, cozy fire, white noise, and retro sound FX
+ * + Plays custom YouTube and Spotify URLs with smart embed transformation!
  */
 
 class SoundEngine {
@@ -26,7 +26,6 @@ class SoundEngine {
     }
   }
 
-  // Generate pink/white noise buffer for rain/wind/noise
   createNoiseBuffer(type = 'white', duration = 5) {
     const bufferSize = this.ctx.sampleRate * duration;
     const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
@@ -61,7 +60,6 @@ class SoundEngine {
     return buffer;
   }
 
-  // Start Rain Synthesizer
   startRain(volume = 0.4) {
     this.init();
     if (this.ambientNodes.rain) return;
@@ -71,7 +69,6 @@ class SoundEngine {
     noiseSource.buffer = noiseBuffer;
     noiseSource.loop = true;
 
-    // Filter to make it sound like gentle rain outside the window
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'lowpass';
     filter.frequency.setValueAtTime(800, this.ctx.currentTime);
@@ -103,7 +100,6 @@ class SoundEngine {
     }
   }
 
-  // Start Cozy Lo-Fi Fireplace Crackle
   startFire(volume = 0.3) {
     this.init();
     if (this.ambientNodes.fire) return;
@@ -114,8 +110,9 @@ class SoundEngine {
     noiseSource.loop = true;
 
     const filter = this.ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(450, this.ctx.currentTime);
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(250, this.ctx.currentTime);
+    filter.Q.setValueAtTime(2.0, this.ctx.currentTime);
 
     const gainNode = this.ctx.createGain();
     gainNode.gain.setValueAtTime(volume, this.ctx.currentTime);
@@ -144,61 +141,50 @@ class SoundEngine {
     }
   }
 
-  // Start Lo-Fi Vinyl Warm Hum & Chords
   startLofi(volume = 0.35) {
     this.init();
     if (this.ambientNodes.lofi) return;
 
-    // Dual soothing sine oscillators in pleasant fifths/minor chord (Lo-Fi chord pad)
-    const osc1 = this.ctx.createOscillator();
-    const osc2 = this.ctx.createOscillator();
-    const oscFilter = this.ctx.createBiquadFilter();
-
-    osc1.type = 'triangle';
-    osc2.type = 'sine';
-
-    osc1.frequency.setValueAtTime(130.81, this.ctx.currentTime); // C3
-    osc2.frequency.setValueAtTime(196.00, this.ctx.currentTime); // G3
-
-    oscFilter.type = 'lowpass';
-    oscFilter.frequency.setValueAtTime(320, this.ctx.currentTime);
+    const chordNotes = [261.63, 329.63, 392.00, 493.88]; // Cmaj7 chord
+    const oscillators = [];
 
     const gainNode = this.ctx.createGain();
-    gainNode.gain.setValueAtTime(volume * 0.4, this.ctx.currentTime);
+    gainNode.gain.setValueAtTime(volume * 0.3, this.ctx.currentTime);
 
-    osc1.connect(oscFilter);
-    osc2.connect(oscFilter);
-    oscFilter.connect(gainNode);
+    chordNotes.forEach((freq) => {
+      const osc = this.ctx.createOscillator();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+      osc.connect(gainNode);
+      osc.start();
+      oscillators.push(osc);
+    });
+
     gainNode.connect(this.masterGain);
-
-    osc1.start();
-    osc2.start();
-
-    this.ambientNodes.lofi = { osc1, osc2, gain: gainNode };
+    this.ambientNodes.lofi = { oscillators, gain: gainNode };
   }
 
   stopLofi() {
     if (this.ambientNodes.lofi) {
-      try {
-        this.ambientNodes.lofi.osc1.stop();
-        this.ambientNodes.lofi.osc2.stop();
-        this.ambientNodes.lofi.osc1.disconnect();
-        this.ambientNodes.lofi.osc2.disconnect();
-      } catch (e) {}
+      this.ambientNodes.lofi.oscillators.forEach((osc) => {
+        try {
+          osc.stop();
+          osc.disconnect();
+        } catch (e) {}
+      });
       delete this.ambientNodes.lofi;
     }
   }
 
   setLofiVolume(val) {
     if (this.ambientNodes.lofi) {
-      this.ambientNodes.lofi.gain.gain.setValueAtTime(val * 0.4, this.ctx.currentTime);
+      this.ambientNodes.lofi.gain.gain.setValueAtTime(val * 0.3, this.ctx.currentTime);
     }
   }
 
-  // Retro 8-bit Notification Chimes
   playTimerCompleteChime() {
     this.init();
-    const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6 arpeggio
+    const notes = [523.25, 659.25, 783.99, 1046.50];
     notes.forEach((freq, idx) => {
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
@@ -214,6 +200,51 @@ class SoundEngine {
 
       osc.start(this.ctx.currentTime + idx * 0.12);
       osc.stop(this.ctx.currentTime + idx * 0.12 + 0.36);
+    });
+  }
+
+  playBellSound() {
+    this.init();
+    const frequencies = [587.33, 880.00, 1174.66, 1760.00]; // Harmonic Bell (D5, A5, D6, A6)
+    frequencies.forEach((f, i) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(f, this.ctx.currentTime);
+
+      const amp = 0.15 / (i + 1);
+      gain.gain.setValueAtTime(amp, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 1.8);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+      osc.start();
+      osc.stop(this.ctx.currentTime + 1.85);
+    });
+  }
+
+  playGongSound() {
+    this.init();
+    const freqs = [110.0, 164.81, 220.0, 293.66]; // Deep resonance (A2, E3, A3, D4)
+    freqs.forEach((f, i) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(f, this.ctx.currentTime);
+
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(450, this.ctx.currentTime);
+      filter.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 2.5);
+
+      gain.gain.setValueAtTime(0.18, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 2.8);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.masterGain);
+      osc.start();
+      osc.stop(this.ctx.currentTime + 2.85);
     });
   }
 
@@ -235,27 +266,173 @@ class SoundEngine {
     osc.start();
     osc.stop(this.ctx.currentTime + 0.04);
   }
-
-  playLevelUpFanfare() {
-    this.init();
-    const notes = [440, 554.37, 659.25, 880, 1108.73, 1318.51];
-    notes.forEach((freq, idx) => {
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.09);
-
-      gain.gain.setValueAtTime(0.15, this.ctx.currentTime + idx * 0.09);
-      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + idx * 0.09 + 0.4);
-
-      osc.connect(gain);
-      gain.connect(this.masterGain);
-
-      osc.start(this.ctx.currentTime + idx * 0.09);
-      osc.stop(this.ctx.currentTime + idx * 0.09 + 0.42);
-    });
-  }
 }
 
 window.soundEngine = new SoundEngine();
+
+// ============================================================================
+// Music Station Manager (YouTube & Spotify Streaming Integration)
+// ============================================================================
+class MusicStationManager {
+  constructor() {
+    this.currentSource = 'youtube'; // 'youtube' or 'spotify'
+    this.currentUrl = 'https://www.youtube-nocookie.com/embed/jfKfPfyJRdk?enablejsapi=1&autoplay=1';
+    this.currentTitle = 'Lofi Girl - 24/7 Relaxing Study Stream';
+    this.presets = [
+      {
+        name: '🎧 Lofi Girl 24/7',
+        tag: 'Live Study Beats',
+        type: 'youtube',
+        url: 'https://www.youtube.com/watch?v=jfKfPfyJRdk'
+      },
+      {
+        name: '⚔️ Gladiator Tavern',
+        tag: 'Medieval Focus',
+        type: 'youtube',
+        url: 'https://www.youtube.com/watch?v=5r3B7ydkgH8'
+      },
+      {
+        name: '🪄 Sorcerer Archives',
+        tag: 'Mystic Rain & Magic',
+        type: 'youtube',
+        url: 'https://www.youtube.com/watch?v=8Vz9aP2eJbE'
+      },
+      {
+        name: '🌿 Zelda & Chill',
+        tag: 'Cozy Nostalgia',
+        type: 'spotify',
+        url: 'https://open.spotify.com/playlist/37i9dQZF1DXdLEN7aqioXM'
+      }
+    ];
+  }
+
+  init() {
+    this.bindEvents();
+    this.renderPresets();
+  }
+
+  parseMediaUrl(inputUrl) {
+    if (!inputUrl) return null;
+    inputUrl = inputUrl.trim();
+
+    // Spotify track / playlist / album
+    if (inputUrl.includes('spotify.com')) {
+      const match = inputUrl.match(/open\.spotify\.com\/(track|playlist|album|artist)\/([a-zA-Z0-9]+)/);
+      if (match) {
+        const type = match[1];
+        const id = match[2];
+        return {
+          type: 'spotify',
+          embedUrl: `https://open.spotify.com/embed/${type}/${id}?utm_source=generator&theme=0`,
+          title: `Spotify ${type.charAt(0).toUpperCase() + type.slice(1)}`
+        };
+      }
+    }
+
+    // YouTube playlist
+    if (inputUrl.includes('list=')) {
+      const listMatch = inputUrl.match(/[?&]list=([a-zA-Z0-9_-]+)/);
+      if (listMatch) {
+        return {
+          type: 'youtube',
+          embedUrl: `https://www.youtube-nocookie.com/embed/videoseries?list=${listMatch[1]}&autoplay=1`,
+          title: 'YouTube Study Playlist'
+        };
+      }
+    }
+
+    // YouTube standard watch or short url
+    let videoId = null;
+    const ytWatchMatch = inputUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/);
+    if (ytWatchMatch) {
+      videoId = ytWatchMatch[1];
+    }
+
+    if (videoId) {
+      return {
+        type: 'youtube',
+        embedUrl: `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&enablejsapi=1`,
+        title: 'Custom YouTube Track'
+      };
+    }
+
+    return null;
+  }
+
+  loadUrl(url, customTitle = null) {
+    const parsed = this.parseMediaUrl(url);
+    if (!parsed) {
+      alert('Please enter a valid YouTube or Spotify link.\nExamples:\n• https://www.youtube.com/watch?v=...\n• https://open.spotify.com/playlist/...');
+      return;
+    }
+
+    this.currentSource = parsed.type;
+    this.currentUrl = parsed.embedUrl;
+    this.currentTitle = customTitle || parsed.title;
+
+    const iframe = document.getElementById('music-stream-iframe');
+    const container = document.getElementById('music-iframe-container');
+    const nowPlayingEl = document.getElementById('music-now-playing-title');
+    const badgeEl = document.getElementById('music-source-badge');
+
+    if (iframe) {
+      iframe.src = parsed.embedUrl;
+    }
+    if (container) {
+      container.style.height = parsed.type === 'spotify' ? '152px' : '170px';
+    }
+    if (nowPlayingEl) {
+      nowPlayingEl.textContent = this.currentTitle;
+    }
+    if (badgeEl) {
+      badgeEl.textContent = parsed.type === 'spotify' ? 'SPOTIFY' : 'YOUTUBE';
+      badgeEl.style.color = parsed.type === 'spotify' ? '#1db954' : '#ff4444';
+    }
+
+    // Save recent
+    try {
+      localStorage.setItem('timylabs_last_music_url', url);
+    } catch (e) {}
+
+    if (window.soundEngine) {
+      window.soundEngine.playClickSound();
+    }
+  }
+
+  renderPresets() {
+    const container = document.getElementById('music-presets-list');
+    if (!container) return;
+
+    container.innerHTML = '';
+    this.presets.forEach((p) => {
+      const chip = document.createElement('div');
+      chip.className = 'music-preset-chip';
+      chip.innerHTML = `
+        <div style="font-weight: 700; color: #fff; font-size: 12px;">${p.name}</div>
+        <div style="font-size: 10px; color: var(--text-dim);">${p.tag}</div>
+      `;
+      chip.onclick = () => this.loadUrl(p.url, p.name);
+      container.appendChild(chip);
+    });
+  }
+
+  bindEvents() {
+    const loadBtn = document.getElementById('btn-load-custom-music');
+    const input = document.getElementById('input-custom-music-url');
+    if (loadBtn && input) {
+      loadBtn.addEventListener('click', () => {
+        if (input.value) {
+          this.loadUrl(input.value);
+        }
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (input.value) this.loadUrl(input.value);
+        }
+      });
+    }
+  }
+}
+
+window.musicStationManager = new MusicStationManager();
