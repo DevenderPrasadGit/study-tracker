@@ -118,7 +118,7 @@ body.crt-active {
 }
 
 /* ==========================================================================
-   Sidebar Navigation
+   Sidebar Navigation & Collapsible Shell
    ========================================================================== */
 .sidebar {
   width: var(--sidebar-width);
@@ -132,7 +132,126 @@ body.crt-active {
   -webkit-backdrop-filter: blur(24px);
   border-right: 1px solid var(--card-border-subtle);
   position: relative;
-  z-index: 10;
+  z-index: 100;
+  transition: margin-left 0.35s cubic-bezier(0.4, 0, 0.2, 1), transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: margin-left, transform;
+}
+
+/* Collapsed state - slides left completely */
+.sidebar.collapsed {
+  margin-left: calc(-1 * var(--sidebar-width));
+  transform: translateX(-100%);
+  pointer-events: none;
+}
+
+/* Sidebar Hide / Collapse Button */
+.sidebar-toggle-btn {
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--card-border-subtle);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.sidebar-toggle-btn:hover {
+  background: rgba(245, 166, 35, 0.15);
+  border-color: var(--accent-gold);
+  color: var(--accent-gold);
+  transform: translateX(-2px);
+  box-shadow: 0 0 10px var(--accent-gold-glow);
+}
+
+/* Floating Reveal Handle (Appears top-left when sidebar is hidden) */
+.sidebar-reveal-handle {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-30px);
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+body.sidebar-is-collapsed .sidebar-reveal-handle {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+
+.sidebar-expand-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1.5px solid var(--accent-gold);
+  color: var(--accent-gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 16px var(--accent-gold-glow);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  animation: pulseExpandHandle 3s ease-in-out infinite alternate;
+}
+
+.sidebar-expand-btn:active {
+  cursor: grabbing;
+  transform: scale(0.96);
+}
+
+.sidebar-expand-btn:hover {
+  background: rgba(245, 166, 35, 0.25);
+  transform: scale(1.08) translateX(3px);
+  box-shadow: 0 6px 26px rgba(0, 0, 0, 0.6), 0 0 24px var(--accent-gold-glow);
+}
+
+@keyframes pulseExpandHandle {
+  0% {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 10px var(--accent-gold-glow);
+  }
+  100% {
+    box-shadow: 0 6px 26px rgba(0, 0, 0, 0.6), 0 0 20px var(--accent-gold-glow);
+  }
+}
+
+.sidebar-expand-hint {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--accent-gold-light);
+  background: rgba(10, 15, 28, 0.85);
+  backdrop-filter: blur(12px);
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--card-border-subtle);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+}
+
+.sidebar-reveal-handle:hover .sidebar-expand-hint {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .brand-section {
@@ -378,6 +497,11 @@ body.crt-active {
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--card-border-subtle);
   z-index: 20;
+  transition: padding-left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.sidebar-is-collapsed .top-header {
+  padding-left: 72px;
 }
 
 .header-greeting-container {
@@ -2161,6 +2285,20 @@ body[data-theme="gladiator"] .btn-start-focus:hover {
   box-shadow: 0 4px 25px rgba(217, 119, 6, 0.6), 0 0 50px rgba(234, 88, 12, 0.3);
 }
 
+body[data-theme="gladiator"] .sidebar-expand-btn {
+  background: rgba(30, 20, 10, 0.92);
+  border-color: #f59e0b;
+  color: #fbbf24;
+  box-shadow: 0 4px 20px rgba(217, 119, 6, 0.5), 0 0 20px rgba(234, 88, 12, 0.35);
+}
+
+body[data-theme="gladiator"] .sidebar-toggle-btn:hover {
+  background: rgba(234, 88, 12, 0.25);
+  border-color: #f59e0b;
+  color: #fbbf24;
+  box-shadow: 0 0 12px rgba(234, 88, 12, 0.5);
+}
+
 /* Gladiator - Cards with stone/leather texture */
 body[data-theme="gladiator"] .glass-card,
 body[data-theme="gladiator"] .stat-card {
@@ -2401,6 +2539,20 @@ body[data-theme="sorcerer"] .btn-start-focus {
 body[data-theme="sorcerer"] .btn-pill-amber:hover,
 body[data-theme="sorcerer"] .btn-start-focus:hover {
   box-shadow: 0 4px 30px rgba(147, 51, 234, 0.7), 0 0 60px rgba(168, 85, 247, 0.25);
+}
+
+body[data-theme="sorcerer"] .sidebar-expand-btn {
+  background: rgba(20, 12, 40, 0.92);
+  border-color: #c084fc;
+  color: #fef08a;
+  box-shadow: 0 4px 20px rgba(168, 85, 247, 0.45), 0 0 20px rgba(192, 132, 252, 0.35);
+}
+
+body[data-theme="sorcerer"] .sidebar-toggle-btn:hover {
+  background: rgba(168, 85, 247, 0.25);
+  border-color: #c084fc;
+  color: #fef08a;
+  box-shadow: 0 0 12px rgba(192, 132, 252, 0.5);
 }
 
 /* Sorcerer - Cards with parchment/arcane feel */

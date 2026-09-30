@@ -1350,4 +1350,163 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+
+  // ==========================================================================
+  // Collapsible Sidebar & Drag-to-Expand System
+  // ==========================================================================
+  function initSidebarToggle() {
+    const sidebar = document.querySelector('.sidebar');
+    const collapseBtn = document.getElementById('btn-sidebar-collapse');
+    const revealHandle = document.getElementById('sidebar-reveal-handle');
+    const expandBtn = document.getElementById('btn-sidebar-expand');
+    if (!sidebar) return;
+
+    const setCollapsed = (collapsed, animate = true) => {
+      if (!animate) {
+        sidebar.style.transition = 'none';
+        if (revealHandle) revealHandle.style.transition = 'none';
+      }
+
+      if (collapsed) {
+        sidebar.classList.add('collapsed');
+        document.body.classList.add('sidebar-is-collapsed');
+        try {
+          localStorage.setItem('timylabs_sidebar_collapsed', 'true');
+        } catch (e) {}
+      } else {
+        sidebar.classList.remove('collapsed');
+        document.body.classList.remove('sidebar-is-collapsed');
+        try {
+          localStorage.setItem('timylabs_sidebar_collapsed', 'false');
+        } catch (e) {}
+      }
+
+      if (!animate) {
+        sidebar.offsetHeight; // force reflow
+        sidebar.style.transition = '';
+        if (revealHandle) {
+          revealHandle.offsetHeight;
+          revealHandle.style.transition = '';
+        }
+      }
+
+      if (window.soundEngine && animate) {
+        window.soundEngine.playClickSound();
+      }
+    };
+
+    // Restore saved state (default to false if not set)
+    try {
+      const saved = localStorage.getItem('timylabs_sidebar_collapsed');
+      if (saved === 'true') {
+        setCollapsed(true, false);
+      }
+    } catch (e) {}
+
+    // Collapse button click (slides left)
+    if (collapseBtn) {
+      collapseBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setCollapsed(true, true);
+      });
+    }
+
+    // Expand button click (slides back in)
+    if (expandBtn) {
+      expandBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setCollapsed(false, true);
+      });
+    }
+
+    // Drag interaction on top-left reveal handle to pull sidebar onto screen
+    if (revealHandle) {
+      let isDragging = false;
+      let startX = 0;
+      let currentDeltaX = 0;
+
+      revealHandle.addEventListener('pointerdown', (e) => {
+        isDragging = true;
+        startX = e.clientX;
+        currentDeltaX = 0;
+        sidebar.style.transition = 'none';
+        revealHandle.style.transition = 'none';
+        try {
+          revealHandle.setPointerCapture(e.pointerId);
+        } catch (err) {}
+      });
+
+      revealHandle.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        currentDeltaX = Math.max(0, Math.min(260, e.clientX - startX));
+        sidebar.style.transform = `translateX(calc(-100% + ${currentDeltaX}px))`;
+        revealHandle.style.transform = `translateX(${currentDeltaX}px)`;
+      });
+
+      const endDrag = (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        try {
+          revealHandle.releasePointerCapture(e.pointerId);
+        } catch (err) {}
+
+        sidebar.style.transition = '';
+        sidebar.style.transform = '';
+        revealHandle.style.transition = '';
+        revealHandle.style.transform = '';
+
+        // If dragged more than 40px to the right, open the sidebar!
+        if (currentDeltaX > 40) {
+          setCollapsed(false, true);
+        } else {
+          // If pure click/tap without drag, open it
+          if (currentDeltaX <= 5) {
+            setCollapsed(false, true);
+          }
+        }
+        currentDeltaX = 0;
+      };
+
+      revealHandle.addEventListener('pointerup', endDrag);
+      revealHandle.addEventListener('pointercancel', endDrag);
+    }
+
+    // Left screen edge drag (0-25px) when collapsed
+    window.addEventListener('pointerdown', (e) => {
+      if (document.body.classList.contains('sidebar-is-collapsed') && e.clientX <= 25) {
+        let isEdgeDragging = true;
+        let startX = e.clientX;
+        sidebar.style.transition = 'none';
+
+        const onEdgeMove = (moveEvt) => {
+          if (!isEdgeDragging) return;
+          const delta = Math.max(0, Math.min(260, moveEvt.clientX - startX));
+          sidebar.style.transform = `translateX(calc(-100% + ${delta}px))`;
+        };
+
+        const onEdgeUp = (upEvt) => {
+          isEdgeDragging = false;
+          window.removeEventListener('pointermove', onEdgeMove);
+          window.removeEventListener('pointerup', onEdgeUp);
+          sidebar.style.transition = '';
+          sidebar.style.transform = '';
+          if (upEvt.clientX - startX > 50) {
+            setCollapsed(false, true);
+          }
+        };
+
+        window.addEventListener('pointermove', onEdgeMove);
+        window.addEventListener('pointerup', onEdgeUp);
+      }
+    });
+
+    window.toggleSidebar = (forceState) => {
+      const isCurrentlyCollapsed = document.body.classList.contains('sidebar-is-collapsed');
+      const target = forceState !== undefined ? forceState : !isCurrentlyCollapsed;
+      setCollapsed(target, true);
+    };
+  }
+
+  initSidebarToggle();
 });
+

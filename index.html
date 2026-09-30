@@ -117,6 +117,16 @@
 
   </div>
 
+  <!-- Floating Arrow Button to Reveal / Drag Sidebar when Hidden -->
+  <div id="sidebar-reveal-handle" class="sidebar-reveal-handle" title="Click or drag right to open sidebar">
+    <button id="btn-sidebar-expand" class="sidebar-expand-btn" aria-label="Expand Sidebar">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 18 15 12 9 6"></polyline>
+      </svg>
+    </button>
+    <span class="sidebar-expand-hint">Drag or click to open</span>
+  </div>
+
   <!-- Main Application Shell -->
   <div class="app-shell">
     
@@ -130,6 +140,11 @@
           <span class="brand-name">Timylabs <span style="font-size: 14px;">✨</span></span>
           <span class="brand-tag">Focus Sanctuary</span>
         </div>
+        <button id="btn-sidebar-collapse" class="sidebar-toggle-btn" title="Hide Sidebar (Slide Left)" aria-label="Hide Sidebar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
       </div>
 
       <!-- Navigation Menu -->
